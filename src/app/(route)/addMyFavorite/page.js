@@ -1,7 +1,7 @@
 // src/app/addMyFavorite/page.js
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AuthGuard from '@app/components/featureComponents/authComponents/AuthGuard';
 import ReviewForm from '@app/components/featureComponents/reviewComponents/ReviewForm';
@@ -12,6 +12,18 @@ import Spinner from '@app/components/ui/Spinner';
 import ErrorMessage from '@app/components/ui/ErrorMessage';
 
 export default function AddMyFavoritePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center h-64">
+        <Spinner size="lg" />
+      </div>
+    }>
+      <AddMyFavoriteContent />
+    </Suspense>
+  );
+}
+
+function AddMyFavoriteContent() {
   const searchParams = useSearchParams();
   const placeId = searchParams.get('placeId');
   const [initialPlace, setInitialPlace] = useState(null);
@@ -25,7 +37,7 @@ export default function AddMyFavoritePage() {
   
   // 편집 모드 여부 확인 (사용자가 이미 원픽 맛집을 등록했으면 편집 모드)
   const isEditMode = !!userReview;
-  
+
   // 타이틀 업데이트
   useEffect(() => {
     document.title = isEditMode 
