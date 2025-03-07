@@ -5,26 +5,75 @@ import { Loader } from '@googlemaps/js-api-loader';
 let mapsApiLoader = null;
 let mapsApiLoadPromise = null;
 
-// Google Maps API 로더 초기화
-export const initMapsApi = () => {
-  if (!mapsApiLoader) {
-    mapsApiLoader = new Loader({
-      apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-      version: 'weekly',
-      libraries: ['places']
-    });
+// // Google Maps API 로더 초기화
+// export const initMapsApi = () => {
+//   if (!mapsApiLoader) {
+//     mapsApiLoader = new Loader({
+//       apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+//       version: 'weekly',
+//       libraries: ['places']
+//     });
     
-    mapsApiLoadPromise = mapsApiLoader.load();
-  }
+//     mapsApiLoadPromise = mapsApiLoader.load();
+//   }
   
-  return mapsApiLoadPromise;
-};
+//   return mapsApiLoadPromise;
+// };
+// src/lib/maps.js의 initMapsApi 함수 수정
+// export const initMapsApi = () => {
+//     if (!mapsApiLoader) {
+//       mapsApiLoader = new Loader({
+//         apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+//         version: 'weekly',
+//         libraries: ['places'],
+//         // 중요: async 옵션 추가
+//         loading: 'async'
+//       });
+      
+//       mapsApiLoadPromise = mapsApiLoader.load().catch(error => {
+//         console.error('Google Maps API 로드 오류:', error);
+//         return Promise.reject(error);
+//       });
+//     }
+    
+//     return mapsApiLoadPromise;
+//   };
+// src/lib/maps.js의 initMapsApi 함수 수정
+export const initMapsApi = () => {
+    if (!mapsApiLoader) {
+      mapsApiLoader = new Loader({
+        apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+        version: 'weekly',
+        libraries: ['places'],
+        // async 로딩 옵션 추가
+        loading: 'async'
+      });
+      
+      mapsApiLoadPromise = mapsApiLoader.load().catch(error => {
+        console.error('Google Maps API 로드 오류:', error);
+        return Promise.reject(error);
+      });
+    }
+    
+    return mapsApiLoadPromise;
+  };
+// // Google Maps API가 로드되어 있는지 확인
+// export const isMapsApiLoaded = () => {
+//   return typeof window !== 'undefined' && window.google && window.google.maps;
+// };
 
-// Google Maps API가 로드되어 있는지 확인
+
+// isMapsApiLoaded 함수 개선
 export const isMapsApiLoaded = () => {
-  return typeof window !== 'undefined' && window.google && window.google.maps;
-};
-
+    const isLoaded = typeof window !== 'undefined' && window.google && window.google.maps;
+    
+    // 이미 로드된 경우 경고 로그 제거
+    if (isLoaded && mapsApiLoader) {
+      console.log('Google Maps API가 이미 로드되어 있습니다.');
+    }
+    
+    return isLoaded;
+  };
 // 현재 위치 가져오기
 export const getCurrentLocation = () => {
   return new Promise((resolve, reject) => {
@@ -49,6 +98,7 @@ export const getCurrentLocation = () => {
   });
 };
 
+
 // 기본 위치 (서울시청)
 export const DEFAULT_CENTER = { lat: 37.5665, lng: 126.9780 };
 export const DEFAULT_ZOOM = 14;
@@ -57,9 +107,14 @@ export const DEFAULT_ZOOM = 14;
 export const initMap = async (mapRef, options = {}) => {
   try {
     if (!mapRef.current) return null;
+
+    // 먼저 이미 로드되었는지 확인 - 추가된 로직
+    if (!isMapsApiLoaded()) {
+        await initMapsApi();
+      }
     
     // Google Maps API 로드
-    await initMapsApi();
+    //await initMapsApi();
     
     // 지도 옵션 설정
     const mapOptions = {
@@ -234,22 +289,64 @@ export const initMarkerClusterer = async (map, markers) => {
   }
 };
 
-// MarkerClusterer 라이브러리 동적 로드
-const loadMarkerClusterer = () => {
-  return new Promise((resolve, reject) => {
-    try {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = (error) => reject(error);
-      document.head.appendChild(script);
-    } catch (error) {
-      reject(error);
-    }
-  });
-};
+// // MarkerClusterer 라이브러리 동적 로드
+// const loadMarkerClusterer = () => {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       const script = document.createElement('script');
+//       script.src = 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+//       script.async = true;
+//       script.onload = () => resolve();
+//       script.onerror = (error) => reject(error);
+//       document.head.appendChild(script);
+//     } catch (error) {
+//       reject(error);
+//     }
+//   });
+// };
+// MarkerClusterer 라이브러리 로딩 방식 수정
+// const loadMarkerClusterer = () => {
+//     // 이미 로드되었는지 확인
+//     if (typeof window.MarkerClusterer !== 'undefined') {
+//       return Promise.resolve();
+//     }
+    
+//     return new Promise((resolve, reject) => {
+//       try {
+//         const script = document.createElement('script');
+//         script.src = 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+//         script.async = true;
+//         script.defer = true; // defer 추가
+//         script.onload = () => resolve();
+//         script.onerror = (error) => reject(error);
+//         document.head.appendChild(script);
+//       } catch (error) {
+//         reject(error);
+//       }
+//     });
+//   };
 
+// MarkerClusterer 라이브러리 동적 로드 함수 개선
+const loadMarkerClusterer = () => {
+    // 이미 로드되었는지 확인
+    if (typeof window.MarkerClusterer !== 'undefined') {
+      return Promise.resolve();
+    }
+    
+    return new Promise((resolve, reject) => {
+      try {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
+        script.async = true;
+        script.defer = true; // defer 추가
+        script.onload = () => resolve();
+        script.onerror = (error) => reject(error);
+        document.head.appendChild(script);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  };
 // 지도 경계 조정
 export const fitBounds = (map, markers) => {
   if (!map || !markers || markers.length === 0) return;

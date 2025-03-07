@@ -17,12 +17,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <head>
-        {/* Google Maps 스크립트 (이 방식은 Next.js 15.1.6에서 작동합니다) */}
-        <script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-          async
-          defer
-        />
+        {/* Google Maps 스크립트 태그 제거 */}
       </head>
       <body className={inter.className}>
         {/* 페이지 구조 */}
