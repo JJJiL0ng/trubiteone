@@ -1,7 +1,7 @@
 // src/app/api/places/[id]/route.js
 import { NextResponse } from 'next/server';
-import { getPlaceById } from '@/lib/db';
-import { getPlaceDetails } from '@/lib/maps';
+import { getPlaceById } from '@app/lib/db';
+import { getPlaceDetails } from '@app/lib/maps';
 
 // 특정 장소 정보 가져오기 (GET)
 export async function GET(request, { params }) {

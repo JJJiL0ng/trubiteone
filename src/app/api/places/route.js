@@ -1,7 +1,7 @@
 // src/app/api/places/route.js
 import { NextResponse } from 'next/server';
-import { getAllPlaces, getTopPlaces, getPlaceById } from '@/lib/db';
-import { searchPlaces, getPlaceDetails } from '@/lib/maps';
+import { getAllPlaces, getTopPlaces, getPlaceById } from '@app/lib/db';
+import { searchPlaces, getPlaceDetails } from '@app/lib/maps';
 
 // 장소 목록 가져오기 (GET)
 export async function GET(request) {

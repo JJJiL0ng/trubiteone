@@ -1,7 +1,7 @@
 // src/app/api/upload/route.js
 import { NextResponse } from 'next/server';
-import { uploadReviewImage } from '@/lib/storage';
-import { getUserData } from '@/lib/auth';
+import { uploadReviewImage } from '@app/lib/storage';
+import { getUserData } from '@app/lib/auth';
 
 // 파일 크기 제한 (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
