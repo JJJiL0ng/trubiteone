@@ -41,11 +41,17 @@ let mapsApiLoadPromise = null;
 // src/lib/maps.js의 initMapsApi 함수 수정
 export const initMapsApi = () => {
     if (!mapsApiLoader) {
+      // API 키 확인 로직 추가
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        console.error('Google Maps API 키가 설정되지 않았습니다.');
+        return Promise.reject(new Error('Google Maps API 키가 설정되지 않았습니다.'));
+      }
+      
       mapsApiLoader = new Loader({
-        apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+        apiKey: apiKey,
         version: 'weekly',
         libraries: ['places'],
-        // async 로딩 옵션 추가
         loading: 'async'
       });
       
@@ -106,15 +112,27 @@ export const DEFAULT_ZOOM = 14;
 // 지도 초기화
 export const initMap = async (mapRef, options = {}) => {
   try {
-    if (!mapRef.current) return null;
+    if (!mapRef || !mapRef.current) {
+      console.error('유효한 지도 참조가 없습니다.');
+      return null;
+    }
 
-    // 먼저 이미 로드되었는지 확인 - 추가된 로직
+    // API 로드 상태 확인 및 로드
     if (!isMapsApiLoaded()) {
+      try {
         await initMapsApi();
+        console.log('Google Maps API 로드 완료');
+      } catch (error) {
+        console.error('Google Maps API 로드 실패:', error);
+        throw error;
       }
+    }
     
-    // Google Maps API 로드
-    //await initMapsApi();
+    // window.google 객체 확인
+    if (!window.google || !window.google.maps) {
+      console.error('Google Maps API가 로드되지 않았습니다.');
+      throw new Error('Google Maps API가 로드되지 않았습니다.');
+    }
     
     // 지도 옵션 설정
     const mapOptions = {
@@ -125,12 +143,13 @@ export const initMap = async (mapRef, options = {}) => {
       fullscreenControl: options.fullscreenControl !== undefined ? options.fullscreenControl : true,
       zoomControl: options.zoomControl !== undefined ? options.zoomControl : true,
       styles: options.styles || [],
-      gestureHandling: options.gestureHandling || 'cooperative', // 'cooperative', 'greedy', 'none', 'auto'
+      gestureHandling: options.gestureHandling || 'cooperative',
       ...options
     };
     
     // 지도 생성
     const map = new window.google.maps.Map(mapRef.current, mapOptions);
+    console.log('지도 인스턴스 생성 완료');
     
     return map;
   } catch (error) {

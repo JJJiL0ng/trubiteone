@@ -11,16 +11,17 @@ import ErrorMessage from '@app/components/ui/ErrorMessage';
 export default function HomePage() {
   const router = useRouter();
   const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const { isLoading, error, clearError } = useMap();
+  const { mapRef, map, isLoading, error, clearError } = useMap({
+    autoLoadPlaces: false // 먼저 지도만 로드
+  });
 
-  // 지도 로드 완료 처리
+  // 지도 로드 상태 확인
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (map) {
+      console.log('지도가 성공적으로 로드되었습니다.');
       setIsMapLoaded(true);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  }, [map]);
 
   // 장소 선택 핸들러
   const handlePlaceSelect = (place) => {

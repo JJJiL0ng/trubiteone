@@ -4,6 +4,7 @@ import './globals.css';
 import Header from '@app/components/layoutComponents/Header';
 import Footer from '@app/components/layoutComponents/Footer';
 import Navigation from '@app/components/layoutComponents/Navigation';
+import Script from 'next/script';
 
 // 폰트 설정
 const inter = Inter({ subsets: ['latin'] });
@@ -17,7 +18,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <head>
-        {/* Google Maps 스크립트 태그 제거 */}
+        {/* Google Maps API 스크립트 */}
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=Function.prototype`}
+          strategy="afterInteractive"
+        />
       </head>
       <body className={inter.className}>
         {/* 페이지 구조 */}

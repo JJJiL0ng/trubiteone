@@ -48,9 +48,14 @@ const useMap = (options = {}) => {
 
   // 지도 초기화
   const initializeMap = useCallback(async () => {
-    if (!mapRef.current) return;
+    if (!mapRef.current) {
+      console.error('mapRef가 유효하지 않습니다.');
+      return;
+    }
 
     try {
+      console.log('지도 초기화 시작...');
+      
       // 저장된 위치 로드
       if (loadSavedPosition) {
         useMapStore.getState().loadSavedPosition();
@@ -63,8 +68,11 @@ const useMap = (options = {}) => {
       });
 
       if (newMap) {
+        console.log('지도 초기화 성공');
         setMap(newMap);
         setMapInitialized(true);
+      } else {
+        console.error('지도 인스턴스가 생성되지 않았습니다.');
       }
     } catch (error) {
       console.error('지도 초기화 오류:', error);
