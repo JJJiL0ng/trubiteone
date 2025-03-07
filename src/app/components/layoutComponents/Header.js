@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { FiMenu, FiX, FiMapPin, FiAward, FiUser, FiPlusCircle } from 'react-icons/fi';
-import useAuth from '@/hooks/useAuth';
-import LoginButton from '@/components/auth/LoginButton';
+import useAuth from '@app/hooks/useAuth';
+import LoginButton from '@app/components/featureComponents/authComponents/LoginButton';
 
 /**
  * 헤더 컴포넌트
