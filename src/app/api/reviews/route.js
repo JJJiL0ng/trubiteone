@@ -1,8 +1,8 @@
 // src/app/api/reviews/route.js
 import { NextResponse } from 'next/server';
-import { getReviewsByPlaceId, getUserReview, addReview } from '@/lib/db';
-import { auth } from '@/lib/firebase';
-import { getUserData } from '@/lib/auth';
+import { getReviewsByPlaceId, getUserReview, addReview } from '@app/lib/db';
+import { auth } from '@app/lib/firebase';
+import { getUserData } from '@app/lib/auth';
 
 // 리뷰 목록 가져오기 (GET)
 export async function GET(request) {

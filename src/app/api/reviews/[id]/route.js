@@ -1,7 +1,7 @@
 // src/app/api/reviews/[id]/route.js
 import { NextResponse } from 'next/server';
-import { updateReview, deleteReview } from '@/lib/db';
-import { getUserData } from '@/lib/auth';
+import { updateReview, deleteReview } from '@app/lib/db';
+import { getUserData } from '@app/lib/auth';
 
 // 특정 리뷰 가져오기 (GET)
 export async function GET(request, { params }) {
