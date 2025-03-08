@@ -31,6 +31,13 @@ const useMapStore = create((set, get) => ({
   
   // 지도 중심 및 줌 레벨 설정
   setMapPosition: (center, zoom) => {
+    // 좌표 유효성 검사 추가
+    if (!center || typeof center.lat !== 'number' || typeof center.lng !== 'number' ||
+        !isFinite(center.lat) || !isFinite(center.lng)) {
+      console.warn('유효하지 않은 좌표:', center);
+      return;
+    }
+    
     set({ center, zoom });
     
     // 지도 인스턴스가 있으면 중심과 줌 레벨 변경

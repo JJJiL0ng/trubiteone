@@ -233,12 +233,12 @@ import {
   };
   
   // 인기 장소 가져오기 (리뷰 수 기준)
-  export const getTopPlaces = async (limit = 10) => {
+  export const getTopPlaces = async (limitCount = 10) => {
     try {
       const q = query(
         collection(db, 'places'),
         orderBy('reviewCount', 'desc'),
-        limit(limit)
+        limit(limitCount)
       );
       
       const querySnapshot = await getDocs(q);

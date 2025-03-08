@@ -1,8 +1,8 @@
 // src/components/featureComponents/mapComponents/Map.js
 'use client';
 
-import { useEffect, useState } from 'react';
-import { FiNavigation, FiSearch, FiPlus, FiInfo } from 'react-icons/fi';
+import { useEffect, useState, useRef } from 'react';
+import { FiNavigation, FiSearch, FiPlus } from 'react-icons/fi';
 import useMap from '@app/hooks/useMaps';
 import useAuth from '@app/hooks/useAuth';
 import Spinner from '@app/components/ui/Spinner';
@@ -27,20 +27,81 @@ const Map = ({
 }) => {
   const [searchVisible, setSearchVisible] = useState(false);
   const { isAuthenticated } = useAuth();
+  const mapContainerRef = useRef(null);
 
   // 지도 훅 초기화
   const {
-    mapRef,
+    map,
     isLoading,
     error,
     moveToCurrentLocation,
     moveToPlace,
     selectedPlace,
-    clearError
+    clearError,
+    loadPlaces
   } = useMap({
+    mapRef: mapContainerRef,
     autoLoadPlaces: true,
-    useMarkerClustering: enableClustering
+    useMarkerClustering: enableClustering,
+    loadSavedPosition: true
   });
+
+  // 디버깅 로그 추가
+  useEffect(() => {
+    console.log('Map component mounted, container ref:', mapContainerRef.current);
+    
+    // Google Maps API 로드 확인
+    if (typeof window !== 'undefined') {
+      console.log('Google Maps API status:', {
+        google: !!window.google,
+        maps: !!(window.google && window.google.maps)
+      });
+    }
+    
+    // 지도 컨테이너 크기 확인
+    if (mapContainerRef.current) {
+      console.log('Map container dimensions:', {
+        width: mapContainerRef.current.offsetWidth,
+        height: mapContainerRef.current.offsetHeight
+      });
+    }
+    
+    return () => {
+      console.log('Map component unmounted');
+    };
+  }, []);
+
+  // 컨테이너 크기 변경 감지
+  useEffect(() => {
+    const checkContainerSize = () => {
+      if (mapContainerRef.current) {
+        const { offsetWidth, offsetHeight } = mapContainerRef.current;
+        console.log('Map container size changed:', { width: offsetWidth, height: offsetHeight });
+        
+        if (offsetWidth === 0 || offsetHeight === 0) {
+          console.warn('Map container has zero width or height!');
+        }
+      }
+    };
+    
+    // 초기 확인
+    checkContainerSize();
+    
+    // 리사이즈 이벤트 리스너
+    window.addEventListener('resize', checkContainerSize);
+    
+    return () => {
+      window.removeEventListener('resize', checkContainerSize);
+    };
+  }, []);
+
+  // 지도가 초기화되었을 때 장소 로드
+  useEffect(() => {
+    if (map) {
+      console.log('지도가 초기화되었습니다. 장소 로드를 시작합니다.');
+      loadPlaces();
+    }
+  }, [map, loadPlaces]);
 
   // 선택된 장소가 변경되면 콜백 호출
   useEffect(() => {
@@ -69,11 +130,12 @@ const Map = ({
   };
 
   return (
-    <div className={`relative w-full h-full ${className}`}>
+    <div className={`relative w-full h-screen ${className}`}>
       {/* 지도 컨테이너 */}
       <div
-        ref={mapRef}
+        ref={mapContainerRef}
         className="w-full h-full rounded-lg"
+        style={{ minHeight: '500px' }} // 명시적 최소 높이 추가
         aria-label="Google Map"
       />
 
@@ -81,6 +143,7 @@ const Map = ({
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
           <Spinner size="lg" />
+          <p className="ml-2 font-medium">지도를 불러오는 중...</p>
         </div>
       )}
 
@@ -94,7 +157,7 @@ const Map = ({
       )}
 
       {/* 컨트롤 버튼 */}
-      {showControls && (
+      {showControls && map && (
         <div className="absolute right-4 top-4 flex flex-col gap-2 z-10">
           {/* 현재 위치 버튼 */}
           <button
@@ -139,14 +202,14 @@ const Map = ({
       )}
 
       {/* 검색 패널 */}
-      {showSearch && searchVisible && (
+      {showSearch && searchVisible && map && (
         <div className="absolute top-4 left-4 right-16 z-10">
           <PlaceSearch onPlaceSelect={handlePlaceSelect} />
         </div>
       )}
 
       {/* 선택된 장소 정보 */}
-      {selectedPlace && (
+      {selectedPlace && map && (
         <div className="absolute bottom-4 left-4 right-4 bg-white rounded-lg shadow-lg p-4 z-10">
           <div className="flex justify-between items-start">
             <div>

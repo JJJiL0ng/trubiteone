@@ -1,4 +1,3 @@
-// src/app/layout.js
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@app/components/layoutComponents/Header';
@@ -20,7 +19,26 @@ export default function RootLayout({ children }) {
       <head>
         {/* Google Maps API 스크립트 */}
         <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=Function.prototype`}
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`}
+          strategy="beforeInteractive"
+        />
+        
+        {/* Google Maps 콜백 함수를 정의하는 인라인 스크립트 */}
+        <Script id="google-maps-init" strategy="beforeInteractive">
+          {`
+            window.initMap = function() {
+              window.googleMapsLoaded = true;
+              console.log('Google Maps API loaded successfully');
+              if (typeof window.dispatchEvent === 'function') {
+                window.dispatchEvent(new Event('google-maps-loaded'));
+              }
+            }
+          `}
+        </Script>
+        
+        {/* MarkerClusterer 라이브러리 */}
+        <Script
+          src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"
           strategy="afterInteractive"
         />
       </head>
