@@ -40,29 +40,41 @@ let mapsApiLoadPromise = null;
 //   };
 // src/lib/maps.js의 initMapsApi 함수 수정
 export const initMapsApi = () => {
-    if (!mapsApiLoader) {
-      // API 키 확인 로직 추가
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (!apiKey) {
-        console.error('Google Maps API 키가 설정되지 않았습니다.');
-        return Promise.reject(new Error('Google Maps API 키가 설정되지 않았습니다.'));
-      }
-      
-      mapsApiLoader = new Loader({
-        apiKey: apiKey,
-        version: 'weekly',
-        libraries: ['places'],
-        loading: 'async'
-      });
-      
-      mapsApiLoadPromise = mapsApiLoader.load().catch(error => {
-        console.error('Google Maps API 로드 오류:', error);
-        return Promise.reject(error);
-      });
-    }
+  // 이미 로드되어 있는지 확인
+  if (isMapsApiLoaded()) {
+    console.log('Google Maps API가 이미 로드되어 있습니다.');
+    return Promise.resolve(window.google.maps);
+  }
+  
+  // API 키 확인
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    console.error('Google Maps API 키가 설정되지 않았습니다.');
+    return Promise.reject(new Error('Google Maps API 키가 설정되지 않았습니다.'));
+  }
+  
+  // layout.js에서 로드된 API를 기다림
+  return new Promise((resolve, reject) => {
+    // 최대 10초 동안 Google Maps API가 로드되기를 기다림
+    let attempts = 0;
+    const maxAttempts = 20; // 10초 (500ms * 20)
     
-    return mapsApiLoadPromise;
-  };
+    const checkGoogleMapsLoaded = () => {
+      attempts++;
+      if (isMapsApiLoaded()) {
+        console.log('Google Maps API 로드 확인됨');
+        resolve(window.google.maps);
+      } else if (attempts < maxAttempts) {
+        console.log(`Google Maps API 로드 대기 중... (${attempts}/${maxAttempts})`);
+        setTimeout(checkGoogleMapsLoaded, 500);
+      } else {
+        reject(new Error('Google Maps API 로드 시간 초과'));
+      }
+    };
+    
+    checkGoogleMapsLoaded();
+  });
+};
 // // Google Maps API가 로드되어 있는지 확인
 // export const isMapsApiLoaded = () => {
 //   return typeof window !== 'undefined' && window.google && window.google.maps;
@@ -71,15 +83,9 @@ export const initMapsApi = () => {
 
 // isMapsApiLoaded 함수 개선
 export const isMapsApiLoaded = () => {
-    const isLoaded = typeof window !== 'undefined' && window.google && window.google.maps;
-    
-    // 이미 로드된 경우 경고 로그 제거
-    if (isLoaded && mapsApiLoader) {
-      console.log('Google Maps API가 이미 로드되어 있습니다.');
-    }
-    
-    return isLoaded;
-  };
+  const isLoaded = typeof window !== 'undefined' && window.google && window.google.maps;
+  return isLoaded;
+};
 // 현재 위치 가져오기
 export const getCurrentLocation = () => {
   return new Promise((resolve, reject) => {
@@ -120,12 +126,15 @@ export const initMap = async (mapRef, options = {}) => {
     // API 로드 상태 확인 및 로드
     if (!isMapsApiLoaded()) {
       try {
+        console.log('Google Maps API 로드 대기 중...');
         await initMapsApi();
         console.log('Google Maps API 로드 완료');
       } catch (error) {
         console.error('Google Maps API 로드 실패:', error);
         throw error;
       }
+    } else {
+      console.log('Google Maps API가 이미 로드되어 있습니다.');
     }
     
     // window.google 객체 확인
@@ -147,6 +156,7 @@ export const initMap = async (mapRef, options = {}) => {
       ...options
     };
     
+    console.log('지도 생성 시도 중...', mapRef.current);
     // 지도 생성
     const map = new window.google.maps.Map(mapRef.current, mapOptions);
     console.log('지도 인스턴스 생성 완료');
