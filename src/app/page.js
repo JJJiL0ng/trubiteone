@@ -1,26 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Map from '@app/components/featureComponents/mapComponents/Map';
 import { FiMapPin, FiPlus, FiMinus } from 'react-icons/fi';
 
+// SearchParamsComponent를 별도로 만들어 useSearchParams를 사용
+function SearchParamsComponent({ setSearchQuery }) {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    const query = searchParams.get('search');
+    if (query) {
+      setSearchQuery(query);
+    }
+  }, [searchParams, setSearchQuery]);
+  
+  return null;
+}
+
 export default function HomePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [selectedPlace, setSelectedPlace] = useState(null);
   const [key, setKey] = useState(0); // 지도 컴포넌트 강제 리렌더링을 위한 키
   const [searchQuery, setSearchQuery] = useState('');
   const [mapZoom, setMapZoom] = useState(15); // 지도 줌 레벨 상태 추가
   const [viewportHeight, setViewportHeight] = useState('100vh');
 
-  // URL 파라미터에서 검색어 가져오기
-  useEffect(() => {
-    const query = searchParams.get('search');
-    if (query) {
-      setSearchQuery(query);
-    }
-  }, [searchParams]);
+  // URL 파라미터에서 검색어 가져오기 - Suspense로 감싸기
+  // 나머지 코드는 그대로 유지
 
   // 뷰포트 높이 계산 및 설정
   useEffect(() => {
@@ -123,6 +131,11 @@ export default function HomePage() {
         paddingTop: 'var(--search-height, 56px)'
       }}
     >
+      {/* Suspense로 SearchParamsComponent 감싸기 */}
+      <Suspense fallback={null}>
+        <SearchParamsComponent setSearchQuery={setSearchQuery} />
+      </Suspense>
+      
       <div className="flex-1 relative w-full h-full">
         {/* 지도 컴포넌트 - key를 사용하여 강제 리렌더링 */}
         <Map
