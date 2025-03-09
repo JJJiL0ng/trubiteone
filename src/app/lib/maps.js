@@ -134,14 +134,22 @@ export const isMapsApiLoaded = () => {
     if (!map || !position) return null;
     
     try {
+      const markerColor = options.markerColor || '#4169E1'; // 기본 색상을 로얄 블루로 설정
+      
       const marker = new window.google.maps.Marker({
         position,
         map,
         title: options.title || '',
-        icon: options.icon,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: markerColor,
+          fillOpacity: 0.9,
+          strokeWeight: 1,
+          strokeColor: '#FFFFFF',
+          scale: 10
+        },
         animation: options.animation,
-        draggable: options.draggable || false,
-        ...options
+        draggable: options.draggable || false
       });
       
       return marker;
@@ -291,7 +299,7 @@ export const isMapsApiLoaded = () => {
   };
   
   // 마커 클러스터러 초기화 (최신 API 방식으로 수정) - 주요 변경 부분
-  export const initMarkerClusterer = async (map, markers) => {
+  export const initMarkerClusterer = async (map, markers, options = {}) => {
     try {
       // Google Maps API 로드 확인
       if (!isMapsApiLoaded()) {
@@ -337,7 +345,7 @@ export const isMapsApiLoaded = () => {
               label: { text: String(count), color: "white" },
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
-                fillColor: "#4285F4",
+                fillColor: options.clusterColor || "#4169E1",
                 fillOpacity: 0.7,
                 scale: 20,
                 strokeColor: "white",

@@ -146,7 +146,7 @@ const Header = ({ className = '' }) => {
             ) : (
               <Link href="/login">
                 <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
-                  3초 로그인
+                  3초 로그인&회원가입
                 </button>
               </Link>
             )}

@@ -188,6 +188,7 @@ const useMap = (options = {}) => {
 
       const marker = createMarker(mapInstance, place.location, {
         title: place.name,
+        markerColor: '#4169E1' // 로얄 블루 색상 지정
       });
 
       // 마커 클릭 이벤트
