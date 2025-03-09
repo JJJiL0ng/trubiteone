@@ -114,14 +114,21 @@ const useReviews = (options = {}) => {
   const setPlaceInfo = useCallback((place) => {
     if (!place) return;
     
-    setReviewForm({
-      ...reviewForm,
-      placeId: place.id,
-      placeName: place.name,
-      placeAddress: place.address || '',
-      placeLocation: place.location
+    console.log('setPlaceInfo 호출됨:', place); // 디버깅용 로그 추가
+    
+    // 함수형 업데이트를 사용하여 최신 상태를 보장
+    setReviewForm(prevForm => {
+      const newForm = {
+        ...prevForm,
+        placeId: place.id,
+        placeName: place.name,
+        placeAddress: place.address || '',
+        placeLocation: place.location
+      };
+      console.log('업데이트된 reviewForm:', newForm); // 디버깅용 로그 추가
+      return newForm;
     });
-  }, [reviewForm, setReviewForm]);
+  }, [setReviewForm]);
 
   // 장소 ID에 해당하는 리뷰 자동 로드
   useEffect(() => {

@@ -188,6 +188,7 @@ const useReviewStore = create((set, get) => ({
     }
     
     const { userReview, reviewForm, photoFile } = get();
+    console.log('submitReview 호출 시 reviewForm:', reviewForm); // 디버깅 로그 추가
     
     // 필수 필드 검증
     if (!reviewForm.placeId || !reviewForm.reviewText || !reviewForm.placeName) {

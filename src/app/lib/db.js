@@ -72,73 +72,73 @@ import {
     }
   };
   
-  // 리뷰 추가하기
-  export const addReview = async (reviewData) => {
-    try {
-      // 트랜잭션 사용하여 원자적으로 처리
-      await runTransaction(db, async (transaction) => {
-        // 1. 사용자가 이미 다른 리뷰를 작성했는지 확인
-        const userRef = doc(db, 'users', reviewData.userId);
-        const userDoc = await transaction.get(userRef);
+  // // 리뷰 추가하기
+  // export const addReview = async (reviewData) => {
+  //   try {
+  //     // 트랜잭션 사용하여 원자적으로 처리
+  //     await runTransaction(db, async (transaction) => {
+  //       // 1. 사용자가 이미 다른 리뷰를 작성했는지 확인
+  //       const userRef = doc(db, 'users', reviewData.userId);
+  //       const userDoc = await transaction.get(userRef);
         
-        if (!userDoc.exists()) {
-          throw new Error('사용자가 존재하지 않습니다.');
-        }
+  //       if (!userDoc.exists()) {
+  //         throw new Error('사용자가 존재하지 않습니다.');
+  //       }
         
-        const userData = userDoc.data();
-        if (userData.favoritePlaceId) {
-          throw new Error('사용자는 이미 원픽 맛집을 등록했습니다.');
-        }
+  //       const userData = userDoc.data();
+  //       if (userData.favoritePlaceId) {
+  //         throw new Error('사용자는 이미 원픽 맛집을 등록했습니다.');
+  //       }
         
-        // 2. 리뷰 추가
-        const reviewRef = doc(collection(db, 'reviews'));
+  //       // 2. 리뷰 추가
+  //       const reviewRef = doc(collection(db, 'reviews'));
         
-        // 리뷰 데이터 준비
-        const newReview = {
-          ...reviewData,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        };
+  //       // 리뷰 데이터 준비
+  //       const newReview = {
+  //         ...reviewData,
+  //         createdAt: serverTimestamp(),
+  //         updatedAt: serverTimestamp()
+  //       };
         
-        transaction.set(reviewRef, newReview);
+  //       transaction.set(reviewRef, newReview);
         
-        // 3. 장소 문서 업데이트 또는 생성
-        const placeRef = doc(db, 'places', reviewData.placeId);
-        const placeDoc = await transaction.get(placeRef);
+  //       // 3. 장소 문서 업데이트 또는 생성
+  //       const placeRef = doc(db, 'places', reviewData.placeId);
+  //       const placeDoc = await transaction.get(placeRef);
         
-        if (placeDoc.exists()) {
-          // 기존 장소 업데이트
-          transaction.update(placeRef, {
-            reviewCount: increment(1),
-            reviewIds: [...placeDoc.data().reviewIds, reviewRef.id],
-            updatedAt: serverTimestamp()
-          });
-        } else {
-          // 새 장소 생성
-          transaction.set(placeRef, {
-            name: reviewData.placeName,
-            address: reviewData.placeAddress,
-            location: reviewData.placeLocation,
-            reviewCount: 1,
-            reviewIds: [reviewRef.id],
-            updatedAt: serverTimestamp()
-          });
-        }
+  //       if (placeDoc.exists()) {
+  //         // 기존 장소 업데이트
+  //         transaction.update(placeRef, {
+  //           reviewCount: increment(1),
+  //           reviewIds: [...placeDoc.data().reviewIds, reviewRef.id],
+  //           updatedAt: serverTimestamp()
+  //         });
+  //       } else {
+  //         // 새 장소 생성
+  //         transaction.set(placeRef, {
+  //           name: reviewData.placeName,
+  //           address: reviewData.placeAddress,
+  //           location: reviewData.placeLocation,
+  //           reviewCount: 1,
+  //           reviewIds: [reviewRef.id],
+  //           updatedAt: serverTimestamp()
+  //         });
+  //       }
         
-        // 4. 사용자 문서 업데이트
-        transaction.update(userRef, {
-          favoritePlaceId: reviewData.placeId
-        });
+  //       // 4. 사용자 문서 업데이트
+  //       transaction.update(userRef, {
+  //         favoritePlaceId: reviewData.placeId
+  //       });
         
-        return reviewRef.id;
-      });
+  //       return reviewRef.id;
+  //     });
       
-      return { success: true };
-    } catch (error) {
-      console.error('리뷰 추가 오류:', error);
-      return { success: false, error: error.message };
-    }
-  };
+  //     return { success: true };
+  //   } catch (error) {
+  //     console.error('리뷰 추가 오류:', error);
+  //     return { success: false, error: error.message };
+  //   }
+  // };
   
   // 리뷰 업데이트하기
   export const updateReview = async (reviewId, updatedData) => {
@@ -276,3 +276,73 @@ import {
       return null;
     }
   };
+  // 리뷰 추가하기
+export const addReview = async (reviewData) => {
+  try {
+    // 트랜잭션 사용하여 원자적으로 처리
+    return await runTransaction(db, async (transaction) => {
+      // === 모든 읽기 작업을 먼저 수행 ===
+      
+      // 1. 사용자 문서 읽기
+      const userRef = doc(db, 'users', reviewData.userId);
+      const userDoc = await transaction.get(userRef);
+      
+      if (!userDoc.exists()) {
+        throw new Error('사용자가 존재하지 않습니다.');
+      }
+      
+      const userData = userDoc.data();
+      if (userData.favoritePlaceId) {
+        throw new Error('사용자는 이미 원픽 맛집을 등록했습니다.');
+      }
+      
+      // 2. 장소 문서 읽기
+      const placeRef = doc(db, 'places', reviewData.placeId);
+      const placeDoc = await transaction.get(placeRef);
+      
+      // === 모든 읽기 작업 완료 후 쓰기 작업 시작 ===
+      
+      // 3. 리뷰 추가 (쓰기 작업)
+      const reviewRef = doc(collection(db, 'reviews'));
+      
+      // 리뷰 데이터 준비
+      const newReview = {
+        ...reviewData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      transaction.set(reviewRef, newReview);
+      
+      // 4. 장소 문서 업데이트 또는 생성 (쓰기 작업)
+      if (placeDoc.exists()) {
+        // 기존 장소 업데이트
+        transaction.update(placeRef, {
+          reviewCount: increment(1),
+          reviewIds: [...placeDoc.data().reviewIds, reviewRef.id],
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        // 새 장소 생성
+        transaction.set(placeRef, {
+          name: reviewData.placeName,
+          address: reviewData.placeAddress,
+          location: reviewData.placeLocation,
+          reviewCount: 1,
+          reviewIds: [reviewRef.id],
+          updatedAt: serverTimestamp()
+        });
+      }
+      
+      // 5. 사용자 문서 업데이트 (쓰기 작업)
+      transaction.update(userRef, {
+        favoritePlaceId: reviewData.placeId
+      });
+      
+      return { success: true, reviewId: reviewRef.id };
+    });
+  } catch (error) {
+    console.error('리뷰 추가 오류:', error);
+    throw error; // 오류 전파를 위해 다시 throw
+  }
+};

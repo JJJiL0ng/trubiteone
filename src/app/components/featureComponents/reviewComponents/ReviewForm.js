@@ -9,6 +9,7 @@ import useAuth from '@/app/hooks/useAuth';
 import PlaceSearch from '@/app/components/featureComponents/mapComponents/PlaceSearch';
 import Spinner from '@/app/components/ui/Spinner';
 import ErrorMessage from '@/app/components/ui/ErrorMessage';
+import useReviewStore from '@/app/store/reviewStore';
 
 /**
  * 리뷰 작성/수정 폼 컴포넌트
@@ -75,21 +76,44 @@ const ReviewForm = ({
     handleImageSelect(file);
   };
 
+  // 장소 선택 핸들러
+  const handlePlaceSelect = (place) => {
+    console.log('선택된 장소:', place);
+    if (place) {
+      // 직접 reviewStore의 상태를 업데이트
+      useReviewStore.getState().setReviewForm({
+        ...useReviewStore.getState().reviewForm,
+        placeId: place.id,
+        placeName: place.name,
+        placeAddress: place.address || '',
+        placeLocation: place.location
+      });
+      
+      // 로그로 확인
+      console.log('스토어 직접 업데이트 후:', useReviewStore.getState().reviewForm);
+    }
+  };
+
   // 리뷰 제출 핸들러
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    console.log('제출 시 reviewForm:', reviewForm);
+    console.log('제출 시 store의 reviewForm:', useReviewStore.getState().reviewForm);
 
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
 
-    if (!reviewForm.placeId) {
+    // reviewStore에서 직접 placeId 확인
+    const storeReviewForm = useReviewStore.getState().reviewForm;
+    if (!storeReviewForm.placeId) {
       alert('맛집을 선택해주세요.');
       return;
     }
 
-    if (!reviewForm.reviewText.trim()) {
+    if (!storeReviewForm.reviewText.trim()) {
       alert('리뷰 내용을 입력해주세요.');
       return;
     }
@@ -115,13 +139,6 @@ const ReviewForm = ({
   // 취소 핸들러
   const handleCancel = () => {
     router.back();
-  };
-
-  // 장소 선택 핸들러
-  const handlePlaceSelect = (place) => {
-    if (place) {
-      setPlaceInfo(place);
-    }
   };
 
   return (
@@ -159,6 +176,7 @@ const ReviewForm = ({
                 onPlaceSelect={handlePlaceSelect}
                 placeholder="맛집 이름을 검색하세요"
                 className="mb-2"
+                useAutocomplete={false}
               />
               {reviewForm.placeName && (
                 <div className="p-4 border rounded mt-2">

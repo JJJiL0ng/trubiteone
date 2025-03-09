@@ -69,7 +69,7 @@ const Footer = ({ className = '' }) => {
           </p>
           
           <div className="mt-4 md:mt-0 flex items-center space-x-4">
-            <a
+            <Link
               href="https://github.com/"
               target="_blank"
               rel="noopener noreferrer"
@@ -77,7 +77,7 @@ const Footer = ({ className = '' }) => {
               aria-label="GitHub"
             >
               <FiGithub size={20} />
-            </a>
+            </Link>
           </div>
         </div>
       </div>

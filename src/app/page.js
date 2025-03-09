@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Map from '@app/components/featureComponents/mapComponents/Map';
+import Link from 'next/link';
 
 export default function HomePage() {
   const router = useRouter();
@@ -33,7 +34,18 @@ export default function HomePage() {
           enableClustering={true}
           onPlaceSelect={handlePlaceSelect}
           className="w-full h-full"
+          useAutocomplete={false}
         />
+        
+        {/* 즐겨찾기 추가 버튼 - 클라이언트 컴포넌트로 분리 */}
+        <div className="absolute bottom-4 right-4">
+          <Link 
+            href="/addMyFavorite"
+            className="flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-700 hover:text-blue-600 font-medium py-2 px-4 rounded-lg shadow"
+          >
+            즐겨찾기 추가
+          </Link>
+        </div>
       </div>
     </div>
   );
