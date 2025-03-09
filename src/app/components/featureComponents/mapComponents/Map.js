@@ -8,7 +8,7 @@ import useAuth from '@app/hooks/useAuth';
 import Spinner from '@app/components/ui/Spinner';
 import ErrorMessage from '@app/components/ui/ErrorMessage';
 import PlaceSearch from '@app/components/featureComponents/mapComponents/PlaceSearch';
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import Script from 'next/script';
 
 /**
  * 구글 맵 컴포넌트
@@ -27,8 +27,19 @@ const Map = ({
   className = ''
 }) => {
   const [searchVisible, setSearchVisible] = useState(false);
+  const [mapsLoaded, setMapsLoaded] = useState(false);
+  const [mapRenderAttempt, setMapRenderAttempt] = useState(0);
   const { isAuthenticated } = useAuth();
   const mapContainerRef = useRef(null);
+
+  // 컴포넌트 마운트 시 Google Maps API 로드 상태 확인
+  useEffect(() => {
+    // 이미 Google Maps API가 로드되어 있는지 확인
+    if (typeof window !== 'undefined' && window.google && window.google.maps) {
+      console.log('Google Maps API가 이미 로드되어 있습니다.');
+      setMapsLoaded(true);
+    }
+  }, []);
 
   // 지도 훅 초기화
   const {
@@ -42,14 +53,45 @@ const Map = ({
     loadPlaces
   } = useMap({
     mapRef: mapContainerRef,
-    autoLoadPlaces: true,
+    autoLoadPlaces: mapsLoaded, // Google Maps API가 로드된 후에만 장소 로드
     useMarkerClustering: enableClustering,
-    loadSavedPosition: true
+    loadSavedPosition: true,
+    mapOptions: {
+      mapTypeId: 'roadmap',
+      mapTypeControl: false
+    }
   });
+
+  // Google Maps API 로드 완료 핸들러
+  const handleMapsLoaded = () => {
+    console.log('Google Maps API 로드 완료');
+    setMapsLoaded(true);
+    
+    // 전역 이벤트 발생
+    if (typeof window !== 'undefined') {
+      window.googleMapsLoaded = true;
+      window.dispatchEvent(new Event('google-maps-loaded'));
+    }
+  };
+
+  // 지도 렌더링 재시도 로직
+  useEffect(() => {
+    // 지도가 로드되지 않았고 컨테이너가 존재하는 경우 재시도
+    if (mapsLoaded && mapContainerRef.current && !map) {
+      const timer = setTimeout(() => {
+        console.log(`지도 렌더링 재시도... (${mapRenderAttempt + 1})`);
+        setMapRenderAttempt(prev => prev + 1);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mapsLoaded, map, mapRenderAttempt]);
 
   // 디버깅 로그 추가
   useEffect(() => {
     console.log('Map component mounted, container ref:', mapContainerRef.current);
+    console.log('Maps loaded state:', mapsLoaded);
+    console.log('Map instance:', map);
     
     // Google Maps API 로드 확인
     if (typeof window !== 'undefined') {
@@ -70,7 +112,7 @@ const Map = ({
     return () => {
       console.log('Map component unmounted');
     };
-  }, []);
+  }, [mapsLoaded, map]);
 
   // 컨테이너 크기 변경 감지
   useEffect(() => {
@@ -100,6 +142,17 @@ const Map = ({
   useEffect(() => {
     if (map) {
       console.log('지도가 초기화되었습니다. 장소 로드를 시작합니다.');
+      
+      // 지도 타입 컨트롤 비활성화
+      map.setOptions({
+        mapTypeControl: false
+      });
+      
+      // 지도 리사이즈 트리거 - 지도가 제대로 표시되지 않는 문제 해결
+      if (window.google && window.google.maps) {
+        window.google.maps.event.trigger(map, 'resize');
+      }
+      
       loadPlaces();
     }
   }, [map, loadPlaces]);
@@ -132,11 +185,28 @@ const Map = ({
 
   return (
     <div className={`relative w-full h-screen ${className}`}>
+      {/* Google Maps API 스크립트 - 이미 로드되지 않은 경우에만 로드 */}
+      {!mapsLoaded && (
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+          strategy="afterInteractive"
+          onLoad={handleMapsLoaded}
+        />
+      )}
+      
+      {/* MarkerClusterer 라이브러리 */}
+      {mapsLoaded && (
+        <Script
+          src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"
+          strategy="afterInteractive"
+        />
+      )}
+
       {/* 지도 컨테이너 */}
       <div
         ref={mapContainerRef}
         className="w-full h-full rounded-lg"
-        style={{ minHeight: '500px' }} // 명시적 최소 높이 추가
+        style={{ minHeight: '500px' }}
         aria-label="Google Map"
       />
 

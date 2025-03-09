@@ -16,32 +16,6 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ko">
-      <head>
-        {/* Google Maps API 스크립트 */}
-        <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`}
-          strategy="beforeInteractive"
-        />
-        
-        {/* Google Maps 콜백 함수를 정의하는 인라인 스크립트 */}
-        <Script id="google-maps-init" strategy="beforeInteractive">
-          {`
-            window.initMap = function() {
-              window.googleMapsLoaded = true;
-              console.log('Google Maps API loaded successfully');
-              if (typeof window.dispatchEvent === 'function') {
-                window.dispatchEvent(new Event('google-maps-loaded'));
-              }
-            }
-          `}
-        </Script>
-        
-        {/* MarkerClusterer 라이브러리 */}
-        <Script
-          src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"
-          strategy="afterInteractive"
-        />
-      </head>
       <body className={inter.className}>
         {/* 페이지 구조 */}
         <div className="flex flex-col min-h-screen">
@@ -49,7 +23,7 @@ export default function RootLayout({ children }) {
           <main className="flex-grow pt-16">
             {children}
           </main>
-          <Footer />
+          {/* <Footer /> */}
           <Navigation />
         </div>
       </body>
