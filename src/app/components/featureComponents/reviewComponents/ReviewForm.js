@@ -265,8 +265,8 @@ const ReviewForm = ({
               취소
             </button>
 
-            {/* 삭제 버튼 (수정 모드인 경우만) */}
-            {isEdit && (
+            {/* 삭제 버튼 (수정 모드인 경우만 - 추후 오픈 예정) */}
+            {/* {isEdit && (
               <button
                 type="button"
                 onClick={handleDelete}
@@ -275,7 +275,7 @@ const ReviewForm = ({
                 <FiTrash2 className="inline-block mr-1" />
                 삭제
               </button>
-            )}
+            )} */}
           </div>
 
           {/* 저장 버튼 */}
