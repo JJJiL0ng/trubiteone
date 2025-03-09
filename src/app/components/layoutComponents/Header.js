@@ -19,6 +19,15 @@ const Header = ({ className = '' }) => {
   const { user, isAuthenticated, userData, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // 클라이언트 측 인증 상태 추적
+  const [clientAuth, setClientAuth] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // 컴포넌트 마운트 확인
+  useEffect(() => {
+    setIsMounted(true);
+    setClientAuth(isAuthenticated);
+  }, [isAuthenticated]);
   
   // URL 변경 시 메뉴 닫기
   useEffect(() => {
@@ -72,6 +81,49 @@ const Header = ({ className = '' }) => {
     return () => window.removeEventListener('resize', updateHeaderHeight);
   }, []);
   
+  // 하이드레이션 이슈 방지를 위한 초기 렌더링 처리
+  if (!isMounted) {
+    return (
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? 'bg-white shadow-md py-1' : 'bg-transparent py-2'
+      } ${className}`}>
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center">
+            {/* 로고 */}
+            <Link href="/" className="flex items-center">
+              <span className="text-xl font-bold text-blue-600">TruBite.one</span>
+            </Link>
+            
+            {/* 데스크탑 메뉴 - 최소한의 항목만 표시 */}
+            <nav className="hidden md:flex items-center space-x-6">
+              <Link href="/" className="flex items-center text-gray-700 hover:text-blue-600">
+                <FiMapPin className="mr-1" />
+                <span>지도</span>
+              </Link>
+              
+              <Link href="/rank" className="flex items-center text-gray-700 hover:text-blue-600">
+                <FiAward className="mr-1" />
+                <span>랭킹</span>
+              </Link>
+              
+              {/* 로그인 버튼 - 초기에는 항상 로그인 버튼 표시 */}
+              <Link href="/login">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                  3초 로그인&회원가입
+                </button>
+              </Link>
+            </nav>
+            
+            {/* 모바일 메뉴 토글 버튼 */}
+            <button className="md:hidden" aria-label="메뉴 열기">
+              <FiMenu size={24} />
+            </button>
+          </div>
+        </div>
+      </header>
+    );
+  }
+  
   return (
     <header 
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -103,7 +155,7 @@ const Header = ({ className = '' }) => {
               <span>랭킹</span>
             </Link>
             
-            {isAuthenticated && (
+            {clientAuth && (
               <Link 
                 href="/addMyFavorite" 
                 className={`flex items-center ${isActive('/addMyFavorite') ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}
@@ -114,7 +166,7 @@ const Header = ({ className = '' }) => {
             )}
             
             {/* 로그인 버튼 또는 프로필 */}
-            {isAuthenticated ? (
+            {clientAuth ? (
               <>
                 <div className="border-t border-gray-200 my-2"></div>
                 <div className="flex items-center p-2">
@@ -185,7 +237,7 @@ const Header = ({ className = '' }) => {
         </div>
         
         {/* 사용자 프로필 영역 */}
-        {isAuthenticated ? (
+        {clientAuth ? (
           <div className="p-4 border-b">
             <div className="flex items-center">
               <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 mr-3">
@@ -246,7 +298,7 @@ const Header = ({ className = '' }) => {
               </Link>
             </li>
             
-            {isAuthenticated && (
+            {clientAuth && (
               <li>
                 <Link 
                   href="/addMyFavorite" 
@@ -264,7 +316,7 @@ const Header = ({ className = '' }) => {
         </nav>
         
         {/* 로그아웃 버튼 */}
-        {isAuthenticated && (
+        {clientAuth && (
           <div className="absolute bottom-20 left-0 right-0 px-4">
             <button
               onClick={() => {

@@ -134,23 +134,62 @@ export const isMapsApiLoaded = () => {
     if (!map || !position) return null;
     
     try {
-      const markerColor = options.markerColor || '#4169E1'; // 기본 색상을 로얄 블루로 설정
+      const {
+        title = '',
+        markerColor = '#4169E1', // 기본 색상을 로얄 블루로 설정
+        customMarker = false,
+        markerText = '',
+        markerSize = 36,  // 기본 크기를 절반으로 줄임 (36 → 18)
+        markerTextColor = '#FFFFFF',
+        markerTextSize = '14px',  // 텍스트 크기도 약간 줄임
+        animation,
+        draggable = false
+      } = options;
       
-      const marker = new window.google.maps.Marker({
+      let markerOptions = {
         position,
         map,
-        title: options.title || '',
-        icon: {
+        title,
+        animation,
+        draggable
+      };
+
+      // 커스텀 마커 사용 시
+      if (customMarker) {
+        // 더 간단한 원형 마커 SVG 경로 사용
+        const svgMarker = {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: markerColor,
+          fillOpacity: 1,
+          strokeWeight: 1,
+          strokeColor: '#FFFFFF',
+          scale: markerSize / 3,  // 크기 조정 (기존 /2에서 /4로 변경하여 더 작게)
+        };
+
+        markerOptions.icon = svgMarker;
+        
+        // 마커 내부에 텍스트 추가
+        if (markerText) {
+          markerOptions.label = {
+            text: markerText,
+            color: markerTextColor,
+            fontSize: markerTextSize,
+            fontWeight: 'bold'
+          };
+        }
+      } else {
+        // 기본 원형 마커 사용
+        markerOptions.icon = {
           path: window.google.maps.SymbolPath.CIRCLE,
           fillColor: markerColor,
           fillOpacity: 0.9,
           strokeWeight: 1,
           strokeColor: '#FFFFFF',
-          scale: 10
-        },
-        animation: options.animation,
-        draggable: options.draggable || false
-      });
+          scale: 15  // 기본 마커 크기도 절반으로 줄임 (10 → 5)
+        };
+      }
+      
+      const marker = new window.google.maps.Marker(markerOptions);
       
       return marker;
     } catch (error) {

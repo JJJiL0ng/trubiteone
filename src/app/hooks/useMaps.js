@@ -188,7 +188,12 @@ const useMap = (options = {}) => {
 
       const marker = createMarker(mapInstance, place.location, {
         title: place.name,
-        markerColor: '#4169E1' // 로얄 블루 색상 지정
+        markerColor: '#4169E1', // 로얄 블루 색상 지정
+        customMarker: true,      // 커스텀 마커 사용
+        markerText: 'T',         // 마커 내부에 표시할 텍스트
+        markerSize: 36,          // 마커 크기 (픽셀)
+        markerTextColor: '#FFFFFF', // 텍스트 색상
+        markerTextSize: '14px'   // 텍스트 크기
       });
 
       // 마커 클릭 이벤트
