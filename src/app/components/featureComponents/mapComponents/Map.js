@@ -8,6 +8,7 @@ import useAuth from '@app/hooks/useAuth';
 import Spinner from '@app/components/ui/Spinner';
 import ErrorMessage from '@app/components/ui/ErrorMessage';
 import PlaceSearch from '@app/components/featureComponents/mapComponents/PlaceSearch';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
 
 /**
  * 구글 맵 컴포넌트
