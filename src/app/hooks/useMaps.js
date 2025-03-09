@@ -71,9 +71,9 @@ const useMap = (options = {}) => {
       return;
     }
 
-    // 이미 초기화된 경우 스킵
-    if (map) {
-      console.log('지도가 이미 초기화되어 있습니다.');
+    // 이미 초기화 중이거나 초기화된 경우 스킵
+    if (map || isInitializing) {
+      console.log('지도가 이미 초기화되어 있거나 초기화 중입니다.');
       return;
     }
 
@@ -89,12 +89,12 @@ const useMap = (options = {}) => {
         if (mapInitAttempts < maxInitAttempts) {
           setTimeout(() => {
             setMapInitAttempts(prev => prev + 1);
-            initializeMap();
+            // 직접 함수를 호출하지 않고 상태만 업데이트
           }, 1000);
         } else {
           console.error('최대 초기화 시도 횟수 초과');
-          setIsInitializing(false);
         }
+        setIsInitializing(false);
         return;
       }
       
@@ -142,8 +142,18 @@ const useMap = (options = {}) => {
     }
   }, [
     mapRef, map, center, zoom, setMap, loadSavedPosition, 
-    checkMapsApiLoaded, mapInitAttempts, setMapPosition
+    checkMapsApiLoaded, mapInitAttempts, isInitializing
+    // setMapPosition 제거
   ]);
+
+  // 지도 초기화 및 재시도 로직을 분리하는 useEffect 추가
+  useEffect(() => {
+    // API가 로드되지 않았고 최대 시도 횟수에 도달하지 않았을 때만 재시도
+    if (mapInitAttempts > 0 && mapInitAttempts < maxInitAttempts && !mapInitialized && !isInitializing) {
+      console.log(`지도 초기화 재시도... (${mapInitAttempts}/${maxInitAttempts})`);
+      initializeMap();
+    }
+  }, [mapInitAttempts, mapInitialized, isInitializing, initializeMap]);
 
   // 마커 생성 및 표시
   const createMarkers = useCallback((mapInstance, placesData) => {
@@ -265,18 +275,18 @@ const useMap = (options = {}) => {
 
   // 지도 초기화
   useEffect(() => {
-    if (!mapInitialized && mapRef && mapRef.current) {
+    if (!mapInitialized && mapRef && mapRef.current && !isInitializing) {
       console.log('지도 초기화 시도...');
       initializeMap();
     }
-  }, [mapInitialized, mapRef, initializeMap]);
+  }, [mapInitialized, mapRef, initializeMap, isInitializing]);
 
   // window resize 이벤트 처리
   useEffect(() => {
     const handleResize = () => {
       if (map && mapRef && mapRef.current) {
         console.log('윈도우 리사이즈 감지, 지도 크기 재조정');
-        google.maps.event.trigger(map, 'resize');
+        window.google.maps.event.trigger(map, 'resize');
       }
     };
     
@@ -292,14 +302,32 @@ const useMap = (options = {}) => {
     return () => {
       console.log('useMap 훅 정리 중...');
       
+      // map 인스턴스에서 모든 이벤트 리스너 제거
+      if (map) {
+        window.google.maps.event.clearInstanceListeners(map);
+      }
+      
+      // 개별 마커의 이벤트 리스너 및 마커 제거
       if (markersRef.current.length > 0) {
         console.log(`${markersRef.current.length}개의 마커 제거`);
         markersRef.current.forEach(marker => {
-          if (marker) marker.setMap(null);
+          if (marker) {
+            window.google.maps.event.clearInstanceListeners(marker);
+            marker.setMap(null);
+          }
         });
+        markersRef.current = [];
       }
     };
-  }, []);
+  }, [map]);
+
+  // 자동으로 장소 로드
+  useEffect(() => {
+    if (mapInitialized && map && autoLoadPlaces) {
+      console.log('지도 초기화 후 자동으로 장소 로드');
+      loadPlacesAndCreateMarkers();
+    }
+  }, [mapInitialized, map, autoLoadPlaces, loadPlacesAndCreateMarkers]);
 
   return {
     map,
