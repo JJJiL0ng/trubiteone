@@ -73,7 +73,9 @@ const Map = ({
       mapTypeId: 'roadmap',
       mapTypeControl: false,
       fullscreenControl: false,
-      streetViewControl: false
+      streetViewControl: false,
+      zoomControl: false, // 기본 줌 컨트롤 비활성화
+      gestureHandling: 'greedy' // 모바일에서 한 손가락으로도 지도 이동 가능
     }
   });
 
@@ -115,7 +117,9 @@ const Map = ({
       map.setOptions({
         mapTypeControl: false,
         fullscreenControl: false,
-        streetViewControl: false
+        streetViewControl: false,
+        zoomControl: false, // 기본 줌 컨트롤 비활성화
+        gestureHandling: 'greedy' // 모바일에서 한 손가락으로도 지도 이동 가능
       });
       
       // 지도 리사이즈 트리거 - 지도가 제대로 표시되지 않는 문제 해결
@@ -265,6 +269,28 @@ const Map = ({
               <FiPlus className="text-green-600" />
             </button>
           )}
+        </div>
+      )}
+
+      {/* 줌 컨트롤 버튼 */}
+      {map && (
+        <div className="absolute right-4 bottom-24 flex flex-col gap-1 z-10">
+          <button
+            onClick={() => map.setZoom(map.getZoom() + 1)}
+            className="bg-white w-8 h-8 flex items-center justify-center rounded-t-md shadow-md hover:bg-gray-100 transition-colors"
+            aria-label="확대"
+            title="확대"
+          >
+            <span className="text-xl font-bold">+</span>
+          </button>
+          <button
+            onClick={() => map.setZoom(map.getZoom() - 1)}
+            className="bg-white w-8 h-8 flex items-center justify-center rounded-b-md shadow-md hover:bg-gray-100 transition-colors"
+            aria-label="축소"
+            title="축소"
+          >
+            <span className="text-xl font-bold">-</span>
+          </button>
         </div>
       )}
 
