@@ -70,20 +70,22 @@ const ReviewItem = ({
   
   return (
     <div className={`border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow ${className}`}>
-      {/* 이미지 섹션 */}
-      <div className="relative w-full h-48">
-        <Image
-          src={photoURL || defaultImageUrl}
-          alt={placeName}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover"
-          onError={(e) => {
-            e.currentTarget.src = defaultImageUrl;
-            e.currentTarget.onerror = null;
-          }}
-        />
-      </div>
+      {/* 이미지 섹션 - 사진이 있을 때만 표시 */}
+      {photoURL && (
+        <div className="relative w-full h-48">
+          <Image
+            src={photoURL || defaultImageUrl}
+            alt={placeName}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover"
+            onError={(e) => {
+              e.currentTarget.src = defaultImageUrl;
+              e.currentTarget.onerror = null;
+            }}
+          />
+        </div>
+      )}
       
       {/* 콘텐츠 섹션 */}
       <div className="p-4">

@@ -82,6 +82,50 @@ const usePlaces = (options = {}) => {
     setSearchResults([]);
   }, []);
 
+  // 장소 상세 정보 가져오기 함수 (추가된 부분)
+  const getPlaceDetails = useCallback(async (placeId) => {
+    if (!placeId) return null;
+    
+    try {
+      setIsLoading(true);
+      
+      // Firestore에서 먼저 확인
+      let placeDetails = await getPlaceById(placeId);
+      
+      if (!placeDetails) {
+        // Firestore에 없으면 Google API로 가져오기
+        const googlePlaceDetails = await getGooglePlaceDetails(placeId);
+        
+        if (googlePlaceDetails) {
+          placeDetails = {
+            id: googlePlaceDetails.place_id,
+            name: googlePlaceDetails.name,
+            address: googlePlaceDetails.formatted_address,
+            location: {
+              lat: googlePlaceDetails.geometry.location.lat(),
+              lng: googlePlaceDetails.geometry.location.lng()
+            },
+            phoneNumber: googlePlaceDetails.formatted_phone_number || '',
+            website: googlePlaceDetails.website || '',
+            photos: googlePlaceDetails.photos ? 
+              googlePlaceDetails.photos.map(photo => ({
+                url: photo.getUrl({ maxWidth: 400, maxHeight: 300 }),
+              })).slice(0, 5) : [],
+            types: googlePlaceDetails.types || []
+          };
+        }
+      }
+      
+      setIsLoading(false);
+      return placeDetails;
+    } catch (error) {
+      console.error('장소 상세 정보 가져오기 오류:', error);
+      setError('장소 상세 정보를 가져오는 중 오류가 발생했습니다.');
+      setIsLoading(false);
+      return null;
+    }
+  }, []);
+
   // 장소 선택 핸들러
   const selectPlace = useCallback(async (place) => {
     setSelectedPlace(place);
@@ -94,32 +138,8 @@ const usePlaces = (options = {}) => {
       try {
         setIsLoading(true);
         
-        // Firestore에서 먼저 확인
-        let placeDetails = await getPlaceById(place.id);
-        
-        if (!placeDetails) {
-          // Firestore에 없으면 Google API로 가져오기
-          const googlePlaceDetails = await getGooglePlaceDetails(place.id);
-          
-          if (googlePlaceDetails) {
-            placeDetails = {
-              id: googlePlaceDetails.place_id,
-              name: googlePlaceDetails.name,
-              address: googlePlaceDetails.formatted_address,
-              location: {
-                lat: googlePlaceDetails.geometry.location.lat(),
-                lng: googlePlaceDetails.geometry.location.lng()
-              },
-              phoneNumber: googlePlaceDetails.formatted_phone_number || '',
-              website: googlePlaceDetails.website || '',
-              photos: googlePlaceDetails.photos ? 
-                googlePlaceDetails.photos.map(photo => ({
-                  url: photo.getUrl({ maxWidth: 400, maxHeight: 300 }),
-                })).slice(0, 5) : [],
-              types: googlePlaceDetails.types || []
-            };
-          }
-        }
+        // getPlaceDetails 함수를 사용하여 상세 정보 가져오기
+        const placeDetails = await getPlaceDetails(place.id);
         
         if (placeDetails) {
           setSelectedPlace(placeDetails);
@@ -132,7 +152,7 @@ const usePlaces = (options = {}) => {
         setIsLoading(false);
       }
     }
-  }, [clearSearch]);
+  }, [clearSearch, getPlaceDetails]);
 
   // 장소 상세 페이지로 이동
   const navigateToPlace = useCallback((place) => {
@@ -242,7 +262,8 @@ const usePlaces = (options = {}) => {
     navigateToPlace,
     navigateToAddFavorite,
     loadTopPlaces,
-    clearError
+    clearError,
+    getPlaceDetails  // 추가된 부분: getPlaceDetails 함수 내보내기
   };
 };
 
