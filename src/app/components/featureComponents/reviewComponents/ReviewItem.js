@@ -135,8 +135,8 @@ const ReviewItem = ({
                 <span>수정</span>
               </Link>
               
-              {/* 삭제 버튼 */}
-              <button
+              {/* 삭제 버튼 - 추후 오픈 예정 */}
+              {/* <button
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className={`text-red-500 hover:text-red-600 flex items-center ${
@@ -145,7 +145,7 @@ const ReviewItem = ({
               >
                 <FiTrash2 size={14} className="mr-1" />
                 <span>{isDeleting ? '삭제 중...' : '삭제'}</span>
-              </button>
+              </button> */}
             </div>
           )}
         </div>
