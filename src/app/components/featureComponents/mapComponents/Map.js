@@ -79,6 +79,22 @@ const Map = ({
     }
   });
 
+  // 현재 위치 이벤트 리스너 추가
+  useEffect(() => {
+    const handleCurrentLocation = () => {
+      console.log('현재 위치 이벤트 감지됨');
+      if (moveToCurrentLocation) {
+        moveToCurrentLocation();
+      }
+    };
+    
+    window.addEventListener('map:currentLocation', handleCurrentLocation);
+    
+    return () => {
+      window.removeEventListener('map:currentLocation', handleCurrentLocation);
+    };
+  }, [moveToCurrentLocation]);
+
   // Google Maps API 로드 완료 핸들러
   const handleMapsLoaded = () => {
     console.log('Google Maps API 로드 완료');
@@ -232,7 +248,10 @@ const Map = ({
         <div className="absolute right-4 top-4 flex flex-col gap-2 z-10">
           {/* 현재 위치 버튼 */}
           <button
-            onClick={moveToCurrentLocation}
+            onClick={() => {
+              console.log('현재 위치 버튼 클릭');
+              moveToCurrentLocation();
+            }}
             className="bg-white p-3 rounded-full shadow-md hover:bg-gray-100 transition-colors"
             aria-label="내 위치로 이동"
             title="내 위치로 이동"

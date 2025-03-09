@@ -6,7 +6,8 @@ import {
   createMarker, 
   initMarkerClusterer, 
   createInfoWindow, 
-  isMapsApiLoaded 
+  isMapsApiLoaded,
+  getCurrentLocation
 } from '@app/lib/maps';
 
 /**
@@ -359,6 +360,82 @@ const useMap = (options = {}) => {
     }
   }, [mapInitialized, map, autoLoadPlaces, loadPlacesAndCreateMarkers]);
 
+  // 현재 위치로 이동하는 함수를 새로 정의합니다
+  const moveToCurrentLocationWithMarker = useCallback(async () => {
+    if (!map) {
+      console.warn('지도가 초기화되지 않았습니다. 현재 위치로 이동할 수 없습니다.');
+      return;
+    }
+
+    try {
+      console.log('현재 위치 가져오는 중...');
+      const position = await getCurrentLocation();
+      console.log('현재 위치:', position);
+      
+      // 지도 이동
+      map.setCenter(position);
+      map.setZoom(16); // 적절한 줌 레벨로 설정
+      
+      // 기존 현재 위치 마커 제거
+      if (window.currentLocationMarker) {
+        window.currentLocationMarker.setMap(null);
+      }
+      
+      // 단순한 빨간 원 마커 생성
+      const currentLocationMarker = new window.google.maps.Marker({
+        position: position,
+        map: map,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: '#FF0000', // 빨간색
+          fillOpacity: 1,
+          strokeColor: '#FFFFFF', // 흰색 테두리
+          strokeWeight: 2,
+          scale: 8 // 작은 크기
+        },
+        title: '현재 위치'
+      });
+      
+      // 전역 변수에 마커 저장 (나중에 제거할 수 있도록)
+      window.currentLocationMarker = currentLocationMarker;
+      
+      // 줌 변경 이벤트 리스너 추가
+      const zoomListener = window.google.maps.event.addListener(map, 'zoom_changed', () => {
+        const currentZoom = map.getZoom();
+        // 줌 레벨이 13 미만이면 마커 숨기기
+        if (currentZoom < 13) {
+          currentLocationMarker.setVisible(false);
+        } else {
+          currentLocationMarker.setVisible(true);
+        }
+      });
+      
+      // 위치 저장
+      setMapPosition({
+        center: position,
+        zoom: map.getZoom()
+      });
+      
+      return position;
+    } catch (error) {
+      console.error('현재 위치 가져오기 오류:', error);
+      
+      // 오류 메시지 표시
+      if (error.code === 1) { // PERMISSION_DENIED
+        alert('위치 정보 접근 권한이 거부되었습니다. 브라우저 설정에서 위치 정보 접근을 허용해주세요.');
+      } else if (error.code === 2) { // POSITION_UNAVAILABLE
+        alert('현재 위치를 확인할 수 없습니다.');
+      } else if (error.code === 3) { // TIMEOUT
+        alert('위치 정보 요청 시간이 초과되었습니다.');
+      } else {
+        alert('위치 정보를 가져오는 중 오류가 발생했습니다.');
+      }
+      
+      return null;
+    }
+  }, [map, setMapPosition]);
+
+  // 기존 함수 대신 새 함수를 반환합니다
   return {
     map,
     center,
@@ -368,7 +445,7 @@ const useMap = (options = {}) => {
     isLoading: isLoading || isInitializing,
     error,
     setMapPosition,
-    moveToCurrentLocation,
+    moveToCurrentLocation: moveToCurrentLocationWithMarker,
     moveToPlace,
     selectPlace,
     clearSelectedPlace,

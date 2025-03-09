@@ -165,24 +165,6 @@ export default function HomePage() {
           <FiMapPin size={24} className="text-blue-600" />
         </button>
 
-        {/* 줌 컨트롤 - 오른쪽 하단에 배치 */}
-        <div className="absolute right-4 bottom-24 z-10 bg-white rounded-lg shadow-md flex flex-col">
-          <button 
-            className="p-2 hover:bg-gray-50 transition-colors border-b border-gray-200"
-            onClick={handleZoomIn}
-            aria-label="확대"
-          >
-            <FiPlus size={20} className="text-gray-700" />
-          </button>
-          <button 
-            className="p-2 hover:bg-gray-50 transition-colors"
-            onClick={handleZoomOut}
-            aria-label="축소"
-          >
-            <FiMinus size={20} className="text-gray-700" />
-          </button>
-        </div>
-
         {/* 선택된 장소가 있을 때 하단 정보 표시 */}
         {selectedPlace && (
           <div className="absolute bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-xl p-4 z-20 transition-transform duration-300">
