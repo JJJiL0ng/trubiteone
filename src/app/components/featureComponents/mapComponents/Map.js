@@ -248,10 +248,7 @@ const Map = ({
         <div className="absolute right-4 top-4 flex flex-col gap-2 z-10">
           {/* 현재 위치 버튼 */}
           <button
-            onClick={() => {
-              console.log('현재 위치 버튼 클릭');
-              moveToCurrentLocation();
-            }}
+            onClick={moveToCurrentLocation}
             className="bg-white p-3 rounded-full shadow-md hover:bg-gray-100 transition-colors"
             aria-label="내 위치로 이동"
             title="내 위치로 이동"
@@ -293,10 +290,10 @@ const Map = ({
 
       {/* 줌 컨트롤 버튼 */}
       {map && (
-        <div className="absolute right-4 bottom-24 flex flex-col gap-1 z-10">
+        <div className="absolute right-4 bottom-24 flex flex-col gap-1 z-20">
           <button
             onClick={() => map.setZoom(map.getZoom() + 1)}
-            className="bg-white w-8 h-8 flex items-center justify-center rounded-t-md shadow-md hover:bg-gray-100 transition-colors"
+            className="bg-white w-10 h-10 flex items-center justify-center rounded-t-md shadow-md hover:bg-gray-100 transition-colors"
             aria-label="확대"
             title="확대"
           >
@@ -304,7 +301,7 @@ const Map = ({
           </button>
           <button
             onClick={() => map.setZoom(map.getZoom() - 1)}
-            className="bg-white w-8 h-8 flex items-center justify-center rounded-b-md shadow-md hover:bg-gray-100 transition-colors"
+            className="bg-white w-10 h-10 flex items-center justify-center rounded-b-md shadow-md hover:bg-gray-100 transition-colors"
             aria-label="축소"
             title="축소"
           >
