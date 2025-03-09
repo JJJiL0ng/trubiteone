@@ -10,6 +10,7 @@ import ErrorMessage from '@app/components/ui/ErrorMessage';
 import PlaceSearch from '@app/components/featureComponents/mapComponents/PlaceSearch';
 import Script from 'next/script';
 import useMapStore from '@app/store/mapStore';
+import { searchPlaceByQuery } from '@app/lib/maps';
 
 /**
  * 구글 맵 컴포넌트
@@ -198,6 +199,56 @@ const Map = ({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [map]);
+
+  // 검색 이벤트 리스너 추가
+  useEffect(() => {
+    const handleSearch = async (event) => {
+      console.log('검색 이벤트 감지됨:', event.detail.query);
+      
+      if (event.detail.query && event.detail.action === 'moveToLocation') {
+        try {
+          // 검색어로 장소 검색
+          const place = await searchPlaceByQuery(event.detail.query);
+          
+          if (place && place.location) {
+            console.log('검색된 장소로 이동:', place);
+            
+            // 직접 지도 이동 처리
+            if (map) {
+              console.log('지도 이동 시도:', place.location);
+              map.setCenter(place.location);
+              map.setZoom(15); // 적절한 줌 레벨 설정
+              
+              // 마커 생성 (선택 사항)
+              const marker = new window.google.maps.Marker({
+                position: place.location,
+                map: map,
+                title: place.name
+              });
+              
+              // 3초 후 마커 제거 (선택 사항)
+              setTimeout(() => {
+                marker.setMap(null);
+              }, 3000);
+            } else {
+              console.error('지도 인스턴스가 없습니다.');
+            }
+            
+            // 기존 moveToPlace 함수도 호출
+            moveToPlace(place);
+          }
+        } catch (error) {
+          console.error('검색 처리 오류:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('map:search', handleSearch);
+    
+    return () => {
+      window.removeEventListener('map:search', handleSearch);
+    };
+  }, [moveToPlace, map]);
 
   return (
     <div className={`relative w-full h-screen ${className}`}>

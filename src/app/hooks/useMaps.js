@@ -7,7 +7,8 @@ import {
   initMarkerClusterer, 
   createInfoWindow, 
   isMapsApiLoaded,
-  getCurrentLocation
+  getCurrentLocation,
+  searchPlaceByQuery
 } from '@app/lib/maps';
 
 /**
@@ -266,14 +267,31 @@ const useMap = (options = {}) => {
     }
   }, [map, loadPlaces, createMarkers]);
 
-  // 장소 검색
+  // 장소 검색 함수 개선
   const searchPlaces = useCallback(async (query) => {
     if (!query) return [];
     
     try {
       console.log('장소 검색 중:', query);
+      
+      // 먼저 store의 검색 함수 사용
       const results = await searchPlacesFromStore(query);
-      console.log(`${results.length}개의 검색 결과 찾음`);
+      
+      if (results.length > 0) {
+        console.log(`${results.length}개의 검색 결과 찾음`);
+        return results;
+      }
+      
+      // 결과가 없으면 직접 검색 시도
+      try {
+        const place = await searchPlaceByQuery(query);
+        if (place) {
+          return [place];
+        }
+      } catch (searchError) {
+        console.warn('직접 장소 검색 실패:', searchError);
+      }
+      
       return results;
     } catch (error) {
       console.error('장소 검색 오류:', error);

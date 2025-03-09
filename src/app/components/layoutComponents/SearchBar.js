@@ -39,7 +39,10 @@ const SearchBar = () => {
       
       // 검색 이벤트 발생 - 커스텀 이벤트로 Map 컴포넌트에 알림
       const searchEvent = new CustomEvent('map:search', { 
-        detail: { query: searchQuery } 
+        detail: { 
+          query: searchQuery,
+          action: 'moveToLocation' 
+        } 
       });
       window.dispatchEvent(searchEvent);
     }

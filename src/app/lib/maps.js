@@ -212,47 +212,97 @@ export const isMapsApiLoaded = () => {
     }
   };
   
-  // 장소 검색
-  export const searchPlaces = async (query, options = {}) => {
-    try {
-      // Google Maps API 로드 확인
+  // 장소 검색 기능 개선
+  export const searchPlaceByQuery = (query) => {
+    return new Promise((resolve, reject) => {
       if (!isMapsApiLoaded()) {
-        console.log('Places API가 로드되지 않았습니다. API 로드 시도 중...');
-        await initMapsApi();
-        
-        // Places API가 로드되었는지 다시 확인
-        if (!window.google || !window.google.maps || !window.google.maps.places) {
-          throw new Error('Google Maps Places API가 로드되지 않았습니다. Google Cloud Console에서 Places API를 활성화해주세요.');
-        }
+        reject(new Error('Google Maps API가 로드되지 않았습니다.'));
+        return;
       }
       
-      return new Promise((resolve, reject) => {
-        // PlacesService 인스턴스 생성
-        const placesService = new window.google.maps.places.PlacesService(
-          document.createElement('div')
-        );
-        
-        // 검색 요청 설정
-        const request = {
-          query,
-          fields: options.fields || ['name', 'geometry', 'formatted_address', 'place_id'],
-          ...options
-        };
-        
-        // 텍스트 검색 실행
-        placesService.findPlaceFromQuery(request, (results, status) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-            resolve(results);
-          } else {
-            console.error('장소 검색 오류:', status);
-            reject(new Error(`장소 검색 오류: ${status}`));
-          }
-        });
+      // 한국 지역으로 제한하기 위한 바운드 설정
+      const koreaBounds = new window.google.maps.LatLngBounds(
+        new window.google.maps.LatLng(33.0, 124.5),  // 남서쪽 경계
+        new window.google.maps.LatLng(38.9, 131.9)   // 북동쪽 경계
+      );
+      
+      // Geocoder 인스턴스 생성
+      const geocoder = new window.google.maps.Geocoder();
+      
+      // 검색 요청 - 한국 지역으로 제한하고 언어 설정
+      geocoder.geocode({
+        address: query,
+        bounds: koreaBounds,
+        componentRestrictions: { country: 'kr' },
+        language: 'ko'
+      }, (results, status) => {
+        if (status === window.google.maps.GeocoderStatus.OK && results.length > 0) {
+          const location = results[0].geometry.location;
+          const place = {
+            id: results[0].place_id,
+            name: results[0].formatted_address,
+            address: results[0].formatted_address,
+            location: {
+              lat: location.lat(),
+              lng: location.lng()
+            }
+          };
+          resolve(place);
+        } else if (status === window.google.maps.GeocoderStatus.ZERO_RESULTS) {
+          // 결과가 없을 경우 지역명에 '동'을 추가하여 다시 시도
+          const modifiedQuery = query.endsWith('동') ? query : `${query}동`;
+          
+          geocoder.geocode({
+            address: modifiedQuery,
+            bounds: koreaBounds,
+            componentRestrictions: { country: 'kr' },
+            language: 'ko'
+          }, (modifiedResults, modifiedStatus) => {
+            if (modifiedStatus === window.google.maps.GeocoderStatus.OK && modifiedResults.length > 0) {
+              const modifiedLocation = modifiedResults[0].geometry.location;
+              const modifiedPlace = {
+                id: modifiedResults[0].place_id,
+                name: modifiedResults[0].formatted_address,
+                address: modifiedResults[0].formatted_address,
+                location: {
+                  lat: modifiedLocation.lat(),
+                  lng: modifiedLocation.lng()
+                }
+              };
+              resolve(modifiedPlace);
+            } else {
+              // 그래도 결과가 없으면 서울을 붙여서 다시 시도
+              const seoulQuery = `서울 ${query}`;
+              
+              geocoder.geocode({
+                address: seoulQuery,
+                bounds: koreaBounds,
+                componentRestrictions: { country: 'kr' },
+                language: 'ko'
+              }, (seoulResults, seoulStatus) => {
+                if (seoulStatus === window.google.maps.GeocoderStatus.OK && seoulResults.length > 0) {
+                  const seoulLocation = seoulResults[0].geometry.location;
+                  const seoulPlace = {
+                    id: seoulResults[0].place_id,
+                    name: seoulResults[0].formatted_address,
+                    address: seoulResults[0].formatted_address,
+                    location: {
+                      lat: seoulLocation.lat(),
+                      lng: seoulLocation.lng()
+                    }
+                  };
+                  resolve(seoulPlace);
+                } else {
+                  reject(new Error(`장소 검색 실패: ${seoulStatus}`));
+                }
+              });
+            }
+          });
+        } else {
+          reject(new Error(`장소 검색 실패: ${status}`));
+        }
       });
-    } catch (error) {
-      console.error('장소 검색 오류:', error);
-      throw error;
-    }
+    });
   };
   
   // 장소 상세 정보 가져오기
