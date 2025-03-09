@@ -9,8 +9,8 @@ import Script from 'next/script';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: '원픽맛집 - 당신만의 단 하나의 맛집을 공유하세요',
-  description: '한 사람당 하나의 음식점만 추천하는 글로벌 맛집 플랫폼입니다.',
+  title: 'trubte.one - 당신만의 단 하나의 맛집을 공유하세요',
+  description: '한 사람당 하나의 인생 음식점만 추천하는 글로벌 맛집 플랫폼입니다.',
 };
 
 export default function RootLayout({ children }) {

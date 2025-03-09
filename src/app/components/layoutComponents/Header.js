@@ -16,7 +16,7 @@ import LoginButton from '@app/components/featureComponents/authComponents/LoginB
  */
 const Header = ({ className = '' }) => {
   const pathname = usePathname();
-  const { user, isAuthenticated, userData } = useAuth();
+  const { user, isAuthenticated, userData, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
@@ -55,7 +55,7 @@ const Header = ({ className = '' }) => {
         <div className="flex justify-between items-center">
           {/* 로고 */}
           <Link href="/" className="flex items-center">
-            <span className="text-xl font-bold text-blue-600">원픽맛집</span>
+            <span className="text-xl font-bold text-blue-600">TruBite.one</span>
           </Link>
           
           {/* 데스크탑 메뉴 */}
@@ -88,44 +88,34 @@ const Header = ({ className = '' }) => {
             
             {/* 로그인 버튼 또는 프로필 */}
             {isAuthenticated ? (
-              <div className="relative group">
-                <button className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
+              <>
+                <div className="border-t border-gray-200 my-2"></div>
+                <div className="flex items-center p-2">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 mr-3">
                     {user?.photoURL ? (
                       <Image 
                         src={user.photoURL} 
                         alt={user.displayName || '사용자'}
-                        width={32}
-                        height={32}
+                        width={40}
+                        height={40}
                         className="object-cover"
                       />
                     ) : (
-                      <FiUser className="w-full h-full p-1 text-gray-600" />
+                      <FiUser className="w-full h-full p-2 text-gray-600" />
                     )}
                   </div>
-                  <span className="text-gray-700 max-w-[100px] truncate">{user?.displayName || '사용자'}</span>
-                </button>
-                
-                {/* 드롭다운 메뉴 */}
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block">
-                  <Link 
-                    href="/addMyFavorite" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    나의 원픽 맛집
-                  </Link>
-                  
-                  <button
-                    onClick={() => {
-                      useAuth.getState().logout();
-                      closeMenu();
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    로그아웃
-                  </button>
+                  <span className="text-gray-800 font-medium">{user?.displayName || '사용자'}</span>
                 </div>
-              </div>
+                <button
+                  onClick={() => {
+                    logout();
+                    closeMenu();
+                  }}
+                  className="flex items-center p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                >
+                  <span className="ml-3 text-base">로그아웃</span>
+                </button>
+              </>
             ) : (
               <LoginButton />
             )}
@@ -178,7 +168,7 @@ const Header = ({ className = '' }) => {
             {isAuthenticated ? (
               <button
                 onClick={() => {
-                  useAuth.getState().logout();
+                  logout();
                   closeMenu();
                 }}
                 className="flex items-center text-gray-700"

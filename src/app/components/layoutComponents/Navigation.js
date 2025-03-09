@@ -3,8 +3,9 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { FiMap, FiAward, FiPlus, FiUser } from 'react-icons/fi';
+import { FiMap, FiAward, FiUser } from 'react-icons/fi';
 import useAuth from '@app/hooks/useAuth';
+import { useState, useEffect } from 'react';
 
 /**
  * 모바일용 하단 네비게이션 컴포넌트
@@ -14,6 +15,12 @@ import useAuth from '@app/hooks/useAuth';
 const Navigation = ({ className = '' }) => {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
+  const [clientAuth, setClientAuth] = useState(false);
+  
+  useEffect(() => {
+    // 클라이언트 측에서만 인증 상태 업데이트
+    setClientAuth(isAuthenticated);
+  }, [isAuthenticated]);
   
   // 현재 활성화된 메뉴 확인
   const isActive = (path) => {
@@ -45,26 +52,15 @@ const Navigation = ({ className = '' }) => {
           <span className="text-xs mt-1">랭킹</span>
         </Link>
         
-        {/* 원픽 등록 */}
+        {/* 로그인/마이페이지 - 클라이언트 측 인증 상태 사용 */}
         <Link 
-          href="/addMyFavorite" 
-          className={`flex flex-col items-center p-2 ${
-            isActive('/addMyFavorite') ? 'text-blue-600' : 'text-gray-600'
-          }`}
-        >
-          <FiPlus size={20} />
-          <span className="text-xs mt-1">원픽 등록</span>
-        </Link>
-        
-        {/* 로그인/마이페이지 */}
-        <Link 
-          href={isAuthenticated ? '/addMyFavorite' : '/login'} 
+          href={clientAuth ? '/addMyFavorite' : '/login'} 
           className={`flex flex-col items-center p-2 ${
             isActive('/login') || isActive('/addMyFavorite') ? 'text-blue-600' : 'text-gray-600'
           }`}
         >
           <FiUser size={20} />
-          <span className="text-xs mt-1">{isAuthenticated ? '내 정보' : '로그인'}</span>
+          <span className="text-xs mt-1">{clientAuth ? '내 원픽' : '로그인'}</span>
         </Link>
       </div>
     </nav>

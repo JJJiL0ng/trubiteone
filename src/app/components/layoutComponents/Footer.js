@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FiMap, FiAward, FiGithub } from 'react-icons/fi';
+import { FiPhone, FiInstagram } from 'react-icons/fi';
 
 /**
  * 푸터 컴포넌트
@@ -13,70 +13,36 @@ const Footer = ({ className = '' }) => {
   const currentYear = new Date().getFullYear();
   
   return (
-    <footer className={`bg-gray-800 text-white py-8 ${className}`}>
-      <div className="container mx-auto px-4">
+    <footer className={`bg-gray-800 text-white py-4 ${className}`}>
+      <div className="container mx-auto px-8">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          {/* 로고 및 설명 */}
-          <div className="mb-6 md:mb-0">
-            <h2 className="text-xl font-bold mb-2">원픽맛집</h2>
-            <p className="text-gray-400 text-sm max-w-md">
-              당신만의 단 하나의 최애 맛집을 공유하세요. 한 사람당 하나의 음식점만 추천하는 글로벌 맛집 플랫폼입니다.
+          {/* 회사 정보 */}
+          <div>
+            <p className="text-gray-400 text-sm">
+              &copy; {currentYear} Lean1st. All rights reserved.
             </p>
           </div>
           
-          {/* 네비게이션 */}
-          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-8">
-            <div>
-              <h3 className="font-medium mb-3">메뉴</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/" className="text-gray-400 hover:text-white flex items-center">
-                    <FiMap className="mr-2" />
-                    <span>지도</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/rank" className="text-gray-400 hover:text-white flex items-center">
-                    <FiAward className="mr-2" />
-                    <span>랭킹</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="text-gray-400 hover:text-white">
-                    로그인
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-3">기술 스택</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>Next.js 15.1.6</li>
-                <li>Firebase</li>
-                <li>Google Maps API</li>
-                <li>Tailwind CSS</li>
-                <li>Zustand</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        
-        {/* 카피라이트 */}
-        <div className="mt-8 pt-4 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm">
-            &copy; {currentYear} 원픽맛집. All rights reserved.
-          </p>
-          
-          <div className="mt-4 md:mt-0 flex items-center space-x-4">
+          {/* 연락처 */}
+          <div className="mt-3 md:mt-0 flex items-center space-x-6">
             <Link
-              href="https://github.com/"
+              href="tel:01094123957"
+              className="text-gray-400 hover:text-white flex items-center"
+              aria-label="전화번호"
+            >
+              <FiPhone className="mr-2" size={18} />
+              <span>연락처번호</span>
+            </Link>
+            
+            <Link
+              href="https://www.instagram.com/jjjil0ng/profilecard/?igsh=cWV6bnZ1b2QwcWJ2"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white"
-              aria-label="GitHub"
+              className="text-gray-400 hover:text-white flex items-center"
+              aria-label="인스타그램"
             >
-              <FiGithub size={20} />
+              <FiInstagram className="mr-2" size={18} />
+              <span>인스타아이디</span>
             </Link>
           </div>
         </div>
