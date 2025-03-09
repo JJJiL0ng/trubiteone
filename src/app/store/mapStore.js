@@ -29,6 +29,46 @@ const useMapStore = create((set, get) => ({
     set({ map });
   },
   
+  // 지도 상태 초기화 (페이지 이동 시 호출)
+  resetMapState: () => {
+    const { map, markers, markerClusterer } = get();
+    
+    // 마커 클러스터러 정리
+    if (markerClusterer) {
+      markerClusterer.clearMarkers();
+    }
+    
+    // 각 마커 제거
+    if (markers && markers.length > 0) {
+      markers.forEach(marker => {
+        if (marker) {
+          if (window.google && window.google.maps) {
+            window.google.maps.event.clearInstanceListeners(marker);
+          }
+          marker.setMap(null);
+        }
+      });
+    }
+    
+    // 지도 이벤트 리스너 제거
+    if (map && window.google && window.google.maps) {
+      window.google.maps.event.clearInstanceListeners(map);
+    }
+    
+    // 상태 초기화
+    set({
+      map: null,
+      markers: [],
+      markerClusterer: null,
+      selectedPlace: null,
+      searchResults: [],
+      isLoading: false,
+      error: null
+    });
+    
+    console.log('지도 상태가 초기화되었습니다.');
+  },
+  
   // 지도 중심 및 줌 레벨 설정
   setMapPosition: (center, zoom) => {
     // 좌표 유효성 검사 추가

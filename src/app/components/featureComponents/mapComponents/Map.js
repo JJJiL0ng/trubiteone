@@ -9,6 +9,7 @@ import Spinner from '@app/components/ui/Spinner';
 import ErrorMessage from '@app/components/ui/ErrorMessage';
 import PlaceSearch from '@app/components/featureComponents/mapComponents/PlaceSearch';
 import Script from 'next/script';
+import useMapStore from '@app/store/mapStore';
 
 /**
  * 구글 맵 컴포넌트
@@ -18,28 +19,39 @@ import Script from 'next/script';
  * @param {boolean} props.enableClustering - 마커 클러스터링 사용 여부 (기본값: true)
  * @param {Function} props.onPlaceSelect - 장소 선택 시 콜백 함수
  * @param {string} props.className - 추가 CSS 클래스
+ * @param {boolean} props.useAutocomplete - 자동완성 기능 사용 여부 (기본값: false)
  */
 const Map = ({
   showControls = true,
   showSearch = true,
   enableClustering = true,
   onPlaceSelect,
-  className = ''
+  className = '',
+  useAutocomplete = false
 }) => {
   const [searchVisible, setSearchVisible] = useState(false);
   const [mapsLoaded, setMapsLoaded] = useState(false);
   const [mapRenderAttempt, setMapRenderAttempt] = useState(0);
+  const [forceRender, setForceRender] = useState(0);
   const { isAuthenticated } = useAuth();
   const mapContainerRef = useRef(null);
+  const resetMapState = useMapStore(state => state.resetMapState);
 
-  // 컴포넌트 마운트 시 Google Maps API 로드 상태 확인
+  // 컴포넌트 마운트 시 지도 상태 초기화
   useEffect(() => {
+    console.log('Map 컴포넌트 마운트, 지도 상태 초기화');
+    resetMapState();
+    
     // 이미 Google Maps API가 로드되어 있는지 확인
     if (typeof window !== 'undefined' && window.google && window.google.maps) {
       console.log('Google Maps API가 이미 로드되어 있습니다.');
       setMapsLoaded(true);
     }
-  }, []);
+    
+    return () => {
+      console.log('Map 컴포넌트 언마운트');
+    };
+  }, [resetMapState]);
 
   // 지도 훅 초기화
   const {
@@ -50,7 +62,8 @@ const Map = ({
     moveToPlace,
     selectedPlace,
     clearError,
-    loadPlaces
+    loadPlaces,
+    mapInitialized
   } = useMap({
     mapRef: mapContainerRef,
     autoLoadPlaces: mapsLoaded, // Google Maps API가 로드된 후에만 장소 로드
@@ -58,7 +71,9 @@ const Map = ({
     loadSavedPosition: true,
     mapOptions: {
       mapTypeId: 'roadmap',
-      mapTypeControl: false
+      mapTypeControl: false,
+      fullscreenControl: false,
+      streetViewControl: false
     }
   });
 
@@ -72,6 +87,9 @@ const Map = ({
       window.googleMapsLoaded = true;
       window.dispatchEvent(new Event('google-maps-loaded'));
     }
+    
+    // 강제 리렌더링
+    setForceRender(prev => prev + 1);
   };
 
   // 지도 렌더링 재시도 로직
@@ -81,71 +99,23 @@ const Map = ({
       const timer = setTimeout(() => {
         console.log(`지도 렌더링 재시도... (${mapRenderAttempt + 1})`);
         setMapRenderAttempt(prev => prev + 1);
+        setForceRender(prev => prev + 1);
       }, 1000);
       
       return () => clearTimeout(timer);
     }
   }, [mapsLoaded, map, mapRenderAttempt]);
 
-  // 디버깅 로그 추가
-  useEffect(() => {
-    console.log('Map component mounted, container ref:', mapContainerRef.current);
-    console.log('Maps loaded state:', mapsLoaded);
-    console.log('Map instance:', map);
-    
-    // Google Maps API 로드 확인
-    if (typeof window !== 'undefined') {
-      console.log('Google Maps API status:', {
-        google: !!window.google,
-        maps: !!(window.google && window.google.maps)
-      });
-    }
-    
-    // 지도 컨테이너 크기 확인
-    if (mapContainerRef.current) {
-      console.log('Map container dimensions:', {
-        width: mapContainerRef.current.offsetWidth,
-        height: mapContainerRef.current.offsetHeight
-      });
-    }
-    
-    return () => {
-      console.log('Map component unmounted');
-    };
-  }, [mapsLoaded, map]);
-
-  // 컨테이너 크기 변경 감지
-  useEffect(() => {
-    const checkContainerSize = () => {
-      if (mapContainerRef.current) {
-        const { offsetWidth, offsetHeight } = mapContainerRef.current;
-        console.log('Map container size changed:', { width: offsetWidth, height: offsetHeight });
-        
-        if (offsetWidth === 0 || offsetHeight === 0) {
-          console.warn('Map container has zero width or height!');
-        }
-      }
-    };
-    
-    // 초기 확인
-    checkContainerSize();
-    
-    // 리사이즈 이벤트 리스너
-    window.addEventListener('resize', checkContainerSize);
-    
-    return () => {
-      window.removeEventListener('resize', checkContainerSize);
-    };
-  }, []);
-
   // 지도가 초기화되었을 때 장소 로드
   useEffect(() => {
-    if (map) {
+    if (map && mapInitialized) {
       console.log('지도가 초기화되었습니다. 장소 로드를 시작합니다.');
       
       // 지도 타입 컨트롤 비활성화
       map.setOptions({
-        mapTypeControl: false
+        mapTypeControl: false,
+        fullscreenControl: false,
+        streetViewControl: false
       });
       
       // 지도 리사이즈 트리거 - 지도가 제대로 표시되지 않는 문제 해결
@@ -153,9 +123,12 @@ const Map = ({
         window.google.maps.event.trigger(map, 'resize');
       }
       
-      loadPlaces();
+      // 약간의 지연 후 장소 로드 (지도 렌더링이 완료된 후)
+      setTimeout(() => {
+        loadPlaces();
+      }, 500);
     }
-  }, [map, loadPlaces]);
+  }, [map, mapInitialized, loadPlaces, forceRender]);
 
   // 선택된 장소가 변경되면 콜백 호출
   useEffect(() => {
@@ -182,6 +155,29 @@ const Map = ({
       setSearchVisible(false);
     }
   };
+
+  // 페이지 가시성 변경 감지
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('페이지가 다시 보이게 됨, 지도 리렌더링');
+        setForceRender(prev => prev + 1);
+        
+        // 지도가 이미 초기화된 경우 리사이즈 트리거
+        if (map) {
+          setTimeout(() => {
+            window.google.maps.event.trigger(map, 'resize');
+          }, 100);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [map]);
 
   return (
     <div className={`relative w-full h-screen ${className}`}>
@@ -275,7 +271,7 @@ const Map = ({
       {/* 검색 패널 */}
       {showSearch && searchVisible && map && (
         <div className="absolute top-4 left-4 right-16 z-10">
-          <PlaceSearch onPlaceSelect={handlePlaceSelect} />
+          <PlaceSearch onPlaceSelect={handlePlaceSelect} useAutocomplete={useAutocomplete} />
         </div>
       )}
 

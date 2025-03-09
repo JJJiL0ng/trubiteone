@@ -16,6 +16,7 @@ import {
  * @param {boolean} options.autoLoadPlaces - 지도 초기화 시 장소를 자동으로 로드할지 여부 (기본값: true)
  * @param {boolean} options.useMarkerClustering - 마커 클러스터링을 사용할지 여부 (기본값: true)
  * @param {boolean} options.loadSavedPosition - 저장된 위치를 로드할지 여부 (기본값: true)
+ * @param {Object} options.mapOptions - 지도 초기화 추가 옵션
  * @returns {Object} 지도 관련 상태 및 함수
  */
 const useMap = (options = {}) => {
@@ -24,6 +25,7 @@ const useMap = (options = {}) => {
     autoLoadPlaces = true,
     useMarkerClustering = true,
     loadSavedPosition = true,
+    mapOptions = {}
   } = options;
 
   // 로컬 상태
@@ -31,7 +33,7 @@ const useMap = (options = {}) => {
   const [mapInitialized, setMapInitialized] = useState(false);
   const [mapInitAttempts, setMapInitAttempts] = useState(0);
   const [isInitializing, setIsInitializing] = useState(false);
-  const maxInitAttempts = 3;
+  const maxInitAttempts = 5; // 최대 시도 횟수 증가
 
   // mapStore에서 필요한 상태와 함수 가져오기
   const {
@@ -89,7 +91,6 @@ const useMap = (options = {}) => {
         if (mapInitAttempts < maxInitAttempts) {
           setTimeout(() => {
             setMapInitAttempts(prev => prev + 1);
-            // 직접 함수를 호출하지 않고 상태만 업데이트
           }, 1000);
         } else {
           console.error('최대 초기화 시도 횟수 초과');
@@ -109,12 +110,22 @@ const useMap = (options = {}) => {
       
       if (containerWidth === 0 || containerHeight === 0) {
         console.warn('지도 컨테이너 크기가 0입니다:', { width: containerWidth, height: containerHeight });
+        
+        // 컨테이너 크기가 0인 경우 재시도
+        if (mapInitAttempts < maxInitAttempts) {
+          setTimeout(() => {
+            setMapInitAttempts(prev => prev + 1);
+          }, 500);
+        }
+        setIsInitializing(false);
+        return;
       }
 
       // 지도 생성
       const newMap = await initMap(mapRef, {
         center,
         zoom,
+        ...mapOptions
       });
 
       if (newMap) {
@@ -127,11 +138,16 @@ const useMap = (options = {}) => {
           const newCenter = newMap.getCenter();
           const newZoom = newMap.getZoom();
           
-          setMapPosition({
-            center: { lat: newCenter.lat(), lng: newCenter.lng() },
-            zoom: newZoom
-          });
+          if (newCenter && newZoom) {
+            setMapPosition({
+              center: { lat: newCenter.lat(), lng: newCenter.lng() },
+              zoom: newZoom
+            });
+          }
         });
+        
+        // 지도 리사이즈 트리거
+        window.google.maps.event.trigger(newMap, 'resize');
       } else {
         console.error('지도 인스턴스가 생성되지 않았습니다.');
       }
@@ -142,18 +158,17 @@ const useMap = (options = {}) => {
     }
   }, [
     mapRef, map, center, zoom, setMap, loadSavedPosition, 
-    checkMapsApiLoaded, mapInitAttempts, isInitializing
-    // setMapPosition 제거
+    checkMapsApiLoaded, mapInitAttempts, isInitializing, mapOptions
   ]);
 
-  // 지도 초기화 및 재시도 로직을 분리하는 useEffect 추가
+  // 지도 초기화 및 재시도 로직
   useEffect(() => {
     // API가 로드되지 않았고 최대 시도 횟수에 도달하지 않았을 때만 재시도
     if (mapInitAttempts > 0 && mapInitAttempts < maxInitAttempts && !mapInitialized && !isInitializing) {
       console.log(`지도 초기화 재시도... (${mapInitAttempts}/${maxInitAttempts})`);
       initializeMap();
     }
-  }, [mapInitAttempts, mapInitialized, isInitializing, initializeMap]);
+  }, [mapInitAttempts, mapInitialized, isInitializing, initializeMap, maxInitAttempts]);
 
   // 마커 생성 및 표시
   const createMarkers = useCallback((mapInstance, placesData) => {
@@ -281,6 +296,15 @@ const useMap = (options = {}) => {
     }
   }, [mapInitialized, mapRef, initializeMap, isInitializing]);
 
+  // 지도 초기화 첫 시도
+  useEffect(() => {
+    // 컴포넌트 마운트 시 초기화 시도
+    if (mapRef && mapRef.current && !map && !isInitializing && mapInitAttempts === 0) {
+      console.log('지도 초기화 첫 시도...');
+      setMapInitAttempts(1);
+    }
+  }, [mapRef, map, isInitializing, mapInitAttempts]);
+
   // window resize 이벤트 처리
   useEffect(() => {
     const handleResize = () => {
@@ -347,7 +371,8 @@ const useMap = (options = {}) => {
     loadPlaces: loadPlacesAndCreateMarkers,
     clearMarkers,
     clearError,
-    createMarkers
+    createMarkers,
+    mapInitialized
   };
 };
 
