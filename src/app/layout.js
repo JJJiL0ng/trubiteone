@@ -1,8 +1,7 @@
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@app/components/layoutComponents/Header';
-import Footer from '@app/components/layoutComponents/Footer';
-import Navigation from '@app/components/layoutComponents/Navigation';
+import SearchBar from '@app/components/layoutComponents/SearchBar';
 import Script from 'next/script';
 
 // 폰트 설정
@@ -20,11 +19,11 @@ export default function RootLayout({ children }) {
         {/* 페이지 구조 */}
         <div className="flex flex-col min-h-screen">
           <Header />
-          <main className="flex-grow pt-16">
+          <SearchBar />
+          <main className="flex-grow pt-24">
             {children}
           </main>
           {/* <Footer /> */}
-          <Navigation />
         </div>
       </body>
     </html>

@@ -6,6 +6,9 @@
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 255, 255, 255;
+  --vh: 1vh;
+  --header-height: 64px;
+  --search-height: 56px;
 }
 
 body {
@@ -45,4 +48,34 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #bbb;
+}
+
+/* 모바일 화면에서 스크롤 방지 */
+html, body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  overflow: hidden;
+}
+
+/* 모바일 화면에서 맵 컨테이너 스타일 */
+.map-container {
+  height: calc(var(--vh, 1vh) * 100 - var(--header-height) - var(--search-height));
+  width: 100%;
+  position: fixed;
+  top: calc(var(--header-height) + var(--search-height));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+/* 헤더와 검색창 높이 설정 */
+@media (max-width: 768px) {
+  :root {
+    --header-height: 56px;
+    --search-height: 48px;
+  }
 }
