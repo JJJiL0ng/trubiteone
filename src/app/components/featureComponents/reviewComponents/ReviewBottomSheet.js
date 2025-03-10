@@ -57,6 +57,13 @@ const ReviewBottomSheet = ({
     }
   }, [place, isOpen, loadReviews]);
 
+  // isOpen 상태가 변경될 때 sheetPosition 초기화
+  useEffect(() => {
+    if (isOpen) {
+      setSheetPosition(0); // 바텀시트가 열릴 때 항상 가장 낮은 위치에서 시작
+    }
+  }, [isOpen]);
+
   const handleViewAllReviews = () => {
     if (place) {
       router.push(`/reviews/${place.id}`);
@@ -129,7 +136,8 @@ const ReviewBottomSheet = ({
       
       {/* 바텀시트 */}
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg overflow-hidden pointer-events-auto"
+        className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg overflow-hidden pointer-events-auto
+                   ${sheetPosition === 1 ? 'z-[9999]' : ''}`}
         style={{
           height: `${snapPoints[sheetPosition]}vh`,
           transform: dragging ? `translateY(${deltaY}px)` : 'translateY(0)',
