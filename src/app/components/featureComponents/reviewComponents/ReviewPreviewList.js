@@ -1,4 +1,3 @@
-//src/app/components/featureComponents/reviewComponents/ReviewPreviewList.js
 'use client';
 
 import Image from 'next/image';

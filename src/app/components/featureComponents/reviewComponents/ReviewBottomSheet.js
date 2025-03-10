@@ -21,7 +21,7 @@ const ReviewBottomSheet = ({
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState([]);
   const [reviewCount, setReviewCount] = useState(0);
-  const [sheetPosition, setSheetPosition] = useState(0); // 0: 가장 아래, 1: 중간, 2: 가장 위
+  const [sheetPosition, setSheetPosition] = useState(0); // 0: 가장 아래, 1: 가장 위
   const [dragging, setDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [deltaY, setDeltaY] = useState(0);
@@ -30,7 +30,7 @@ const ReviewBottomSheet = ({
   const { loadReviews } = useReviews();
 
   // 바텀시트 스냅 포인트 (화면 높이 기준 퍼센트)
-  const snapPoints = [25, 50, 90];
+  const snapPoints = [25, 88]; // 중간 단계(50%) 제거
 
   // 장소가 변경되면 리뷰 데이터 로드
   useEffect(() => {
@@ -83,25 +83,26 @@ const ReviewBottomSheet = ({
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     const currentDeltaY = clientY - startY;
     setDeltaY(currentDeltaY);
-    
-    // 드래그 방향에 따라 다음 스냅 포인트 결정
-    if (Math.abs(currentDeltaY) > 50) { // 50px 이상 드래그했을 때만 반응
-      if (currentDeltaY > 0 && sheetPosition > 0) {
-        // 아래로 드래그: 더 낮은 스냅 포인트로
-        setSheetPosition(sheetPosition - 1);
-        setDragging(false);
-        setDeltaY(0);
-      } else if (currentDeltaY < 0 && sheetPosition < snapPoints.length - 1) {
-        // 위로 드래그: 더 높은 스냅 포인트로
-        setSheetPosition(sheetPosition + 1);
-        setDragging(false);
-        setDeltaY(0);
-      }
-    }
   };
 
   // 드래그 종료 핸들러
   const handleDragEnd = () => {
+    if (!dragging) return;
+    
+    // 드래그 방향에 따라 다음 스냅 포인트 결정
+    if (Math.abs(deltaY) > 50) { // 50px 이상 드래그했을 때만 반응
+      if (deltaY > 0 && sheetPosition > 0) {
+        // 아래로 드래그: 더 낮은 스냅 포인트로
+        setSheetPosition(sheetPosition - 1);
+      } else if (deltaY < 0 && sheetPosition < snapPoints.length - 1) {
+        // 위로 드래그: 더 높은 스냅 포인트로
+        setSheetPosition(sheetPosition + 1);
+      } else if (deltaY > 100 && sheetPosition === 0) {
+        // 가장 낮은 상태에서 아래로 많이 드래그: 닫기
+        onClose();
+      }
+    }
+    
     setDragging(false);
     setDeltaY(0);
   };
@@ -119,19 +120,20 @@ const ReviewBottomSheet = ({
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
-      {/* 배경 오버레이 */}
+      {/* 배경 오버레이 - 바텀시트가 열려있을 때만 활성화 */}
       <div 
-        className={`absolute inset-0 bg-black transition-opacity duration-300 pointer-events-auto
-                   ${sheetPosition > 0 ? 'bg-opacity-50' : 'bg-opacity-0'}`}
+        className={`absolute inset-0 bg-black transition-opacity duration-300
+                   ${isOpen ? (sheetPosition > 0 ? 'bg-opacity-50 pointer-events-auto' : 'bg-opacity-0') : 'bg-opacity-0'}`}
         onClick={handleClose}
       />
       
       {/* 바텀시트 */}
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg transition-transform duration-300 ease-out pointer-events-auto overflow-hidden"
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg overflow-hidden pointer-events-auto"
         style={{
           height: `${snapPoints[sheetPosition]}vh`,
-          transform: dragging ? `translateY(${deltaY}px)` : 'translateY(0)'
+          transform: dragging ? `translateY(${deltaY}px)` : 'translateY(0)',
+          transition: dragging ? 'none' : 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
         }}
         onTouchStart={handleDragStart}
         onTouchMove={handleDrag}

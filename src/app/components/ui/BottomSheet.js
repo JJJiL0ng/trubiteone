@@ -20,7 +20,7 @@ const ReviewBottomSheet = ({
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState([]);
   const [reviewCount, setReviewCount] = useState(0);
-  const [sheetPosition, setSheetPosition] = useState(0); // 0: 가장 아래, 1: 중간, 2: 가장 위
+  const [sheetPosition, setSheetPosition] = useState(0); // 0: 가장 아래, 1: 가장 위
   const [dragging, setDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [deltaY, setDeltaY] = useState(0); // deltaY 상태 추가
@@ -28,7 +28,7 @@ const ReviewBottomSheet = ({
   const { isAuthenticated } = useAuth();
 
   // 바텀시트 스냅 포인트 (화면 높이 기준 퍼센트)
-  const snapPoints = [25, 50, 90];
+  const snapPoints = [25, 85]; 
 
   // 장소가 변경되면 리뷰 데이터 로드
   useEffect(() => {
@@ -61,35 +61,6 @@ const ReviewBottomSheet = ({
           }
         } catch (error) {
           console.error('리뷰 데이터 로드 중 오류 발생:', error);
-          
-          // 개발 환경에서만 사용할 가짜 데이터
-          console.log("가짜 리뷰 데이터 사용");
-          const mockReviews = [
-            {
-              id: '1',
-              userId: 'user1',
-              userName: '김맛집',
-              userPhotoURL: 'https://via.placeholder.com/100',
-              reviewText: '정말 맛있는 음식과 좋은 분위기! 특히 김치찌개가 일품이었습니다.',
-              createdAt: new Date().toISOString()
-            },
-            {
-              id: '2',
-              userId: 'user2',
-              userName: '박미식',
-              userPhotoURL: 'https://via.placeholder.com/100',
-              reviewText: '서비스가 친절하고 음식이 정갈해요. 가격대비 만족스러운 식사였습니다.',
-              createdAt: new Date(Date.now() - 86400000).toISOString()
-            },
-            {
-              id: '3',
-              userId: 'user3',
-              userName: '최단백',
-              reviewText: '분위기는 좋았지만 음식이 약간 짰어요. 그래도 전반적으로 나쁘지 않았습니다.',
-              createdAt: new Date(Date.now() - 172800000).toISOString()
-            }
-          ];
-          
           setReviews(mockReviews);
           setReviewCount(mockReviews.length);
         } finally {
@@ -169,10 +140,11 @@ const ReviewBottomSheet = ({
       
       {/* 바텀시트 */}
       <div
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg transition-transform duration-300 ease-out pointer-events-auto overflow-hidden"
+        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-lg pointer-events-auto overflow-hidden"
         style={{
           height: `${snapPoints[sheetPosition]}vh`,
-          transform: dragging ? `translateY(${deltaY}px)` : 'translateY(0)'
+          transform: dragging ? `translateY(${deltaY}px)` : 'translateY(0)',
+          transition: dragging ? 'none' : 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)' // 부드러운 애니메이션 적용
         }}
         onTouchStart={handleDragStart}
         onTouchMove={handleDrag}
