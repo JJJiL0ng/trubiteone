@@ -28,7 +28,7 @@ const ReviewBottomSheet = ({
   const { isAuthenticated } = useAuth();
 
   // 바텀시트 스냅 포인트 (화면 높이 기준 퍼센트)
-  const snapPoints = [25, 85]; 
+  const snapPoints = [25, 95]; 
 
   // 장소가 변경되면 리뷰 데이터 로드
   useEffect(() => {

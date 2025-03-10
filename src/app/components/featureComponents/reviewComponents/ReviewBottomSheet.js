@@ -9,6 +9,9 @@ import Spinner from '@app/components/ui/Spinner';
 import useAuth from '@app/hooks/useAuth';
 import useReviews from '@app/hooks/useReviews';
 
+// 바텀시트 상태를 전역으로 관리하기 위한 커스텀 이벤트
+const bottomSheetEvent = typeof window !== 'undefined' ? new CustomEvent('bottomSheetStateChange', { detail: { isFullyOpen: false } }) : null;
+
 /**
  * 장소 리뷰를 위한 바텀시트 컴포넌트
  */
@@ -63,6 +66,17 @@ const ReviewBottomSheet = ({
       setSheetPosition(0); // 바텀시트가 열릴 때 항상 가장 낮은 위치에서 시작
     }
   }, [isOpen]);
+
+  // sheetPosition이 변경될 때마다 이벤트 발생
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isFullyOpen = sheetPosition === 1;
+      const event = new CustomEvent('bottomSheetStateChange', { 
+        detail: { isFullyOpen } 
+      });
+      window.dispatchEvent(event);
+    }
+  }, [sheetPosition]);
 
   const handleViewAllReviews = () => {
     if (place) {
@@ -126,7 +140,7 @@ const ReviewBottomSheet = ({
   if (!place || !isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none">
+    <div className={`fixed inset-0 z-50 pointer-events-none ${sheetPosition === 1 ? 'bottom-sheet-fully-open' : ''}`}>
       {/* 배경 오버레이 - 바텀시트가 열려있을 때만 활성화 */}
       <div 
         className={`absolute inset-0 bg-black transition-opacity duration-300
