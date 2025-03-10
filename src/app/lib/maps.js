@@ -243,20 +243,6 @@ export const isMapsApiLoaded = () => {
     }
   };
   
-  // 정보창(InfoWindow) 생성
-  export const createInfoWindow = (content, options = {}) => {
-    try {
-      return new window.google.maps.InfoWindow({
-        content,
-        maxWidth: options.maxWidth || 250,
-        ...options
-      });
-    } catch (error) {
-      console.error('정보창 생성 오류:', error);
-      return null;
-    }
-  };
-  
   // 장소 검색 기능 개선
   export const searchPlaceByQuery = (query) => {
     return new Promise((resolve, reject) => {

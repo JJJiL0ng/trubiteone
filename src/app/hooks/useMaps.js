@@ -5,7 +5,6 @@ import {
   initMap, 
   createMarker, 
   initMarkerClusterer, 
-  createInfoWindow, 
   isMapsApiLoaded,
   getCurrentLocation,
   searchPlaceByQuery
@@ -204,14 +203,6 @@ const useMap = (options = {}) => {
           console.log('마커 클릭:', place);
           selectPlace(place);
           
-          // 정보창 생성 및 표시
-          const infoWindow = createInfoWindow(
-            `<div class="font-bold">${place.name}</div>
-             <div class="text-sm">${place.address || ''}</div>
-             <div class="text-sm mt-1">리뷰: ${place.reviewCount || 0}개</div>`
-          );
-          
-          infoWindow.open(mapInstance, marker);
         });
       } else {
         console.warn('마커 생성 실패:', place);
