@@ -12,31 +12,76 @@ export const isMapsApiLoaded = () => {
     return isLoaded;
   };
   
-  // Google Maps API 로더 초기화 (간소화된 버전)
+  // Google Maps API 로더 초기화 (개선된 버전)
   export const initMapsApi = () => {
     // 이미 로드되어 있는지 확인
     if (isMapsApiLoaded()) {
       return Promise.resolve(window.google.maps);
     }
     
-    // API가 아직 로드되지 않았으면 기다립니다
+    // API가 아직 로드되지 않았으면 스크립트 로드 시도
     return new Promise((resolve, reject) => {
-      let attempts = 0;
-      const maxAttempts = 50; // 최대 5초 (100ms * 50)
+      // 이미 스크립트가 로드 중인지 확인
+      if (document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]')) {
+        console.log('Google Maps API 스크립트가 이미 로드 중입니다. 완료될 때까지 대기합니다.');
+        
+        // 스크립트가 로드될 때까지 대기
+        let attempts = 0;
+        const maxAttempts = 100; // 최대 10초 (100ms * 100)
+        
+        const checkInterval = setInterval(() => {
+          attempts++;
+          if (isMapsApiLoaded()) {
+            clearInterval(checkInterval);
+            console.log('Google Maps API 로드 확인됨');
+            resolve(window.google.maps);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            const error = new Error('Google Maps API 로드 시간 초과');
+            console.error(error);
+            reject(error);
+          }
+        }, 100);
+        
+        return;
+      }
       
-      const checkInterval = setInterval(() => {
-        attempts++;
-        if (isMapsApiLoaded()) {
-          clearInterval(checkInterval);
-          console.log('Google Maps API 로드 확인됨');
-          resolve(window.google.maps);
-        } else if (attempts >= maxAttempts) {
-          clearInterval(checkInterval);
-          const error = new Error('Google Maps API 로드 시간 초과');
-          console.error(error);
-          reject(error);
+      // 스크립트가 아직 로드되지 않았으면 직접 로드
+      try {
+        console.log('Google Maps API 스크립트 로드 시도...');
+        
+        // API 키 확인 (환경 변수 또는 기본값)
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+        
+        if (!apiKey) {
+          console.warn('Google Maps API 키가 설정되지 않았습니다.');
         }
-      }, 100);
+        
+        // 스크립트 엘리먼트 생성
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMapsCallback`;
+        script.async = true;
+        script.defer = true;
+        
+        // 콜백 함수 설정
+        window.initGoogleMapsCallback = () => {
+          console.log('Google Maps API 로드 완료 (콜백)');
+          resolve(window.google.maps);
+          delete window.initGoogleMapsCallback;
+        };
+        
+        // 오류 처리
+        script.onerror = (error) => {
+          console.error('Google Maps API 스크립트 로드 실패:', error);
+          reject(new Error('Google Maps API 스크립트 로드 실패'));
+        };
+        
+        // 스크립트 추가
+        document.head.appendChild(script);
+      } catch (error) {
+        console.error('Google Maps API 스크립트 추가 오류:', error);
+        reject(error);
+      }
     });
   };
   
@@ -523,5 +568,97 @@ export const isMapsApiLoaded = () => {
     } catch (error) {
       console.error('거리 계산 오류:', error);
       return 0;
+    }
+  };
+
+  // Google Places API를 사용한 장소 검색 함수
+export const searchGooglePlaces = async (query, options = {}) => {
+    try {
+      // Google Maps API 로드 확인
+      if (!isMapsApiLoaded()) {
+        console.log('Places API가 로드되지 않았습니다. API 로드 시도 중...');
+        await initMapsApi();
+        
+        // Places API가 로드되었는지 다시 확인
+        if (!window.google || !window.google.maps || !window.google.maps.places) {
+          throw new Error('Google Maps Places API가 로드되지 않았습니다.');
+        }
+      }
+      
+      return new Promise((resolve, reject) => {
+        // PlacesService 인스턴스 생성
+        const placesService = new window.google.maps.places.PlacesService(
+          document.createElement('div')
+        );
+        
+        // 검색 요청 설정
+        const request = {
+          query,
+          fields: ['name', 'place_id', 'formatted_address', 'geometry', 'photos', 'types'],
+          locationBias: options.locationBias || {
+            // 한국 중심 바운드
+            center: { lat: 37.5665, lng: 126.9780 }, // 서울 중심
+            radius: options.radius || 50000 // 기본 50km 반경
+          },
+          language: options.language || 'ko',
+          types: options.types || []
+        };
+        
+        // 텍스트 검색 요청
+        placesService.textSearch(request, (results, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+            try {
+              // 결과 포맷팅
+              const formattedResults = results
+                .filter(place => place && place.geometry && place.geometry.location)
+                .map(place => {
+                  // 위치 정보 안전하게 접근
+                  let lat = 0, lng = 0;
+                  try {
+                    if (place.geometry.location) {
+                      lat = typeof place.geometry.location.lat === 'function' ? 
+                            place.geometry.location.lat() : 
+                            (place.geometry.location.lat || 0);
+                      
+                      lng = typeof place.geometry.location.lng === 'function' ? 
+                            place.geometry.location.lng() : 
+                            (place.geometry.location.lng || 0);
+                    }
+                  } catch (locError) {
+                    console.error('위치 정보 접근 오류:', locError);
+                  }
+                  
+                  return {
+                    id: place.place_id || '',
+                    name: place.name || '',
+                    address: place.formatted_address || '',
+                    location: { lat, lng },
+                    types: place.types || [],
+                    photos: place.photos ? 
+                      place.photos
+                        .filter(photo => photo && typeof photo.getUrl === 'function')
+                        .map(photo => photo.getUrl({ maxWidth: 400, maxHeight: 300 })) : 
+                      []
+                  };
+                });
+              
+              resolve(formattedResults);
+            } catch (formatError) {
+              console.error('장소 결과 형식 변환 오류:', formatError);
+              // 오류가 있더라도 빈 배열 반환하여 UI가 깨지지 않도록 함
+              resolve([]);
+            }
+          } else if (status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            resolve([]);
+          } else {
+            console.error('장소 검색 오류:', status);
+            reject(new Error(`장소 검색 오류: ${status}`));
+          }
+        });
+      });
+    } catch (error) {
+      console.error('장소 검색 오류:', error);
+      // 오류 발생 시 빈 배열 반환하여 UI가 깨지지 않도록 함
+      return [];
     }
   };

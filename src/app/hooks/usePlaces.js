@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   getPlaceDetails as getGooglePlaceDetails,
-  searchPlaces as searchGooglePlaces,
+  searchGooglePlaces,
   initAutocomplete
 } from '@app/lib/maps';
 import { getPlaceById, getTopPlaces } from '@app/lib/db';
@@ -44,20 +44,35 @@ const usePlaces = (options = {}) => {
 
       try {
         setIsLoading(true);
-        const results = await searchGooglePlaces(query);
+        const results = await searchGooglePlaces(query, {
+          types: ['restaurant', 'cafe', 'food'], // 음식점 관련 장소로 필터링
+          radius: 5000, // 5km 반경 내 검색 (미터 단위)
+          language: 'ko' // 한국어 결과 우선
+        });
         
-        // 검색 결과 포맷팅
-        const formattedResults = results.map(place => ({
-          id: place.place_id,
-          name: place.name,
-          address: place.formatted_address,
-          location: {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng()
-          }
-        }));
+        // 안전하게 결과 처리
+        if (results && Array.isArray(results)) {
+          // 검색 결과 포맷팅
+          const formattedResults = results.map(place => {
+            // 안전하게 위치 정보 처리
+            const location = place.location || {};
+            
+            return {
+              id: place.id || place.place_id || '',
+              name: place.name || '',
+              address: place.address || place.formatted_address || '',
+              location: {
+                lat: location.lat || 0,
+                lng: location.lng || 0
+              }
+            };
+          }).filter(item => item.id && item.name); // 유효한 데이터만 필터링
+          
+          setSearchResults(formattedResults);
+        } else {
+          setSearchResults([]);
+        }
         
-        setSearchResults(formattedResults);
         setError(null);
       } catch (error) {
         console.error('장소 검색 오류:', error);
@@ -82,7 +97,7 @@ const usePlaces = (options = {}) => {
     setSearchResults([]);
   }, []);
 
-  // 장소 상세 정보 가져오기 함수 (추가된 부분)
+  // 장소 상세 정보 가져오기 함수
   const getPlaceDetails = useCallback(async (placeId) => {
     if (!placeId) return null;
     
@@ -94,24 +109,40 @@ const usePlaces = (options = {}) => {
       
       if (!placeDetails) {
         // Firestore에 없으면 Google API로 가져오기
-        const googlePlaceDetails = await getGooglePlaceDetails(placeId);
-        
-        if (googlePlaceDetails) {
+        try {
+          const googlePlaceDetails = await getGooglePlaceDetails(placeId);
+          
+          if (googlePlaceDetails) {
+            // Google API 응답 데이터 안전하게 처리
+            const location = googlePlaceDetails.geometry && 
+                            googlePlaceDetails.geometry.location ? 
+                            googlePlaceDetails.geometry.location : null;
+                            
+            placeDetails = {
+              id: googlePlaceDetails.place_id || placeId,
+              name: googlePlaceDetails.name || '',
+              address: googlePlaceDetails.formatted_address || '',
+              location: location ? {
+                lat: typeof location.lat === 'function' ? location.lat() : (location.lat || 0),
+                lng: typeof location.lng === 'function' ? location.lng() : (location.lng || 0)
+              } : { lat: 0, lng: 0 },
+              phoneNumber: googlePlaceDetails.formatted_phone_number || '',
+              website: googlePlaceDetails.website || '',
+              photos: googlePlaceDetails.photos ? 
+                googlePlaceDetails.photos.map(photo => ({
+                  url: photo.getUrl ? photo.getUrl({ maxWidth: 400, maxHeight: 300 }) : '',
+                })).filter(photo => photo.url).slice(0, 5) : [],
+              types: googlePlaceDetails.types || []
+            };
+          }
+        } catch (googleError) {
+          console.error('Google Places API 오류:', googleError);
+          // API 오류 시 기본 객체 반환
           placeDetails = {
-            id: googlePlaceDetails.place_id,
-            name: googlePlaceDetails.name,
-            address: googlePlaceDetails.formatted_address,
-            location: {
-              lat: googlePlaceDetails.geometry.location.lat(),
-              lng: googlePlaceDetails.geometry.location.lng()
-            },
-            phoneNumber: googlePlaceDetails.formatted_phone_number || '',
-            website: googlePlaceDetails.website || '',
-            photos: googlePlaceDetails.photos ? 
-              googlePlaceDetails.photos.map(photo => ({
-                url: photo.getUrl({ maxWidth: 400, maxHeight: 300 }),
-              })).slice(0, 5) : [],
-            types: googlePlaceDetails.types || []
+            id: placeId,
+            name: '정보 없음',
+            address: '정보를 가져올 수 없습니다',
+            location: { lat: 0, lng: 0 }
           };
         }
       }
@@ -128,6 +159,8 @@ const usePlaces = (options = {}) => {
 
   // 장소 선택 핸들러
   const selectPlace = useCallback(async (place) => {
+    if (!place) return;
+    
     setSelectedPlace(place);
     
     // 검색 결과에서 선택한 경우 검색어와 결과 초기화
@@ -176,10 +209,10 @@ const usePlaces = (options = {}) => {
     try {
       setIsLoading(true);
       const places = await getTopPlaces(limit);
-      setTopPlaces(places);
+      setTopPlaces(places || []);
       setError(null);
       setIsLoading(false);
-      return places;
+      return places || [];
     } catch (error) {
       console.error('인기 장소 로드 오류:', error);
       setError('인기 장소를 불러오는 중 오류가 발생했습니다.');
@@ -207,14 +240,16 @@ const usePlaces = (options = {}) => {
               const place = autocomplete.getPlace();
               
               if (place && place.place_id) {
+                const location = place.geometry && place.geometry.location;
+                
                 const selectedPlace = {
                   id: place.place_id,
-                  name: place.name,
-                  address: place.formatted_address,
-                  location: {
-                    lat: place.geometry.location.lat(),
-                    lng: place.geometry.location.lng()
-                  }
+                  name: place.name || '',
+                  address: place.formatted_address || '',
+                  location: location ? {
+                    lat: typeof location.lat === 'function' ? location.lat() : (location.lat || 0),
+                    lng: typeof location.lng === 'function' ? location.lng() : (location.lng || 0)
+                  } : { lat: 0, lng: 0 }
                 };
                 
                 selectPlace(selectedPlace);
@@ -263,7 +298,7 @@ const usePlaces = (options = {}) => {
     navigateToAddFavorite,
     loadTopPlaces,
     clearError,
-    getPlaceDetails  // 추가된 부분: getPlaceDetails 함수 내보내기
+    getPlaceDetails
   };
 };
 
