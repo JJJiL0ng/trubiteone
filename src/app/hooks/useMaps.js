@@ -171,6 +171,22 @@ const useMap = (options = {}) => {
     }
   }, [mapInitAttempts, mapInitialized, isInitializing, initializeMap, maxInitAttempts]);
 
+  // 마커 클릭 시 지도 위치 조정 함수
+  const adjustMapPosition = useCallback((map, position) => {
+    if (!map || !position) return;
+    
+    // 먼저 마커 위치로 지도 중심 이동
+    map.panTo(position);
+    
+    // 약간의 지연 후 위쪽으로 이동 (지도가 완전히 이동한 후에 수행하기 위함)
+    setTimeout(() => {
+      // 화면 높이의 약 45% 정도 아래로 이동하여 마커가 상단에 위치하도록 함
+      const mapHeight = map.getDiv().offsetHeight;
+      const offsetY = Math.floor(mapHeight * 0.3);
+      map.panBy(0, offsetY);
+    }, 100);
+  }, []);
+
   // 마커 생성 및 표시
   const createMarkers = useCallback((mapInstance, placesData) => {
     if (!mapInstance || !placesData || placesData.length === 0) return [];
@@ -201,8 +217,12 @@ const useMap = (options = {}) => {
       if (marker) {
         marker.addListener('click', () => {
           console.log('마커 클릭:', place);
-          selectPlace(place);
           
+          // 마커 위치로 이동하고 화면 위쪽으로 조정
+          adjustMapPosition(mapInstance, marker.getPosition());
+          
+          // 선택된 장소 설정
+          selectPlace(place);
         });
       } else {
         console.warn('마커 생성 실패:', place);
@@ -237,7 +257,18 @@ const useMap = (options = {}) => {
     }
 
     return newMarkers;
-  }, [clearMarkers, selectPlace, setMarkers, setMarkerClusterer, useMarkerClustering]);
+  }, [clearMarkers, selectPlace, setMarkers, setMarkerClusterer, useMarkerClustering, adjustMapPosition]);
+
+  // moveToPlace 함수 재정의
+  const moveToPlaceWithAdjustment = useCallback((place) => {
+    if (!map || !place || !place.location) return;
+    
+    // 장소로 이동하고 화면 위쪽으로 조정
+    adjustMapPosition(map, place.location);
+    
+    // 선택된 장소 상태 업데이트
+    selectPlace(place);
+  }, [map, selectPlace, adjustMapPosition]);
 
   // 장소 로드 및 마커 표시
   const loadPlacesAndCreateMarkers = useCallback(async () => {
@@ -455,7 +486,7 @@ const useMap = (options = {}) => {
     error,
     setMapPosition,
     moveToCurrentLocation: moveToCurrentLocationWithMarker,
-    moveToPlace,
+    moveToPlace: moveToPlaceWithAdjustment, // 수정된 함수 사용
     selectPlace,
     clearSelectedPlace,
     searchPlaces,

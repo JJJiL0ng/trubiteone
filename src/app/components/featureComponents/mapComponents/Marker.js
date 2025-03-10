@@ -42,8 +42,21 @@ const Marker = ({
     markerRef.current = marker;
 
     // 클릭 이벤트 핸들러 등록
+
     if (marker && onClick) {
       marker.addListener('click', () => {
+        // 먼저 마커 위치로 지도 중심 이동
+        map.panTo(marker.getPosition());
+        
+        // 마커가 화면의 상단 1/4 지점에 오도록 조정
+        // 모바일에서 바텀시트가 마커를 가리지 않도록 더 위쪽으로 배치
+        // 구글맵/네이버맵과 유사한 위치로 조정
+        const mapHeight = map.getDiv().offsetHeight;
+        const offsetY = Math.floor(mapHeight * 0.045); // 화면 높이의 45% 정도 아래로 이동하여 마커가 상단에 오도록 함
+        
+        map.panBy(0, offsetY);
+
+        // 원래 onClick 콜백 호출
         onClick({
           id: marker.id,
           position: marker.getPosition().toJSON(),
