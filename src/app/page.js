@@ -103,6 +103,9 @@ export default function HomePage() {
     if (place && place.id) {
       console.log('선택된 장소:', place);
       setSelectedPlace(place);
+    } else {
+      // 선택된 장소가 없거나 유효하지 않은 경우 selectedPlace를 null로 설정
+      setSelectedPlace(null);
     }
   };
 
@@ -128,7 +131,8 @@ export default function HomePage() {
       style={{ 
         height: viewportHeight,
         top: 'var(--header-height, 64px)',
-        paddingTop: 'var(--search-height, 56px)'
+        paddingTop: 'var(--search-height, 56px)',
+        paddingBottom: '20px' // 하단에 여백 추가
       }}
     >
       {/* Suspense로 SearchParamsComponent 감싸기 */}
@@ -164,25 +168,10 @@ export default function HomePage() {
         >
           <FiMapPin size={24} className="text-blue-600" />
         </button>
-
-        {/* 선택된 장소가 있을 때 하단 정보 표시 */}
-        {selectedPlace && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-xl p-4 z-20 transition-transform duration-300">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-bold text-lg">{selectedPlace.name}</h3>
-                <p className="text-gray-600 text-sm mt-1">{selectedPlace.address}</p>
-              </div>
-              <button 
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                onClick={() => navigateToPlace(selectedPlace.id)}
-              >
-                상세보기
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+      
+      {/* 하단 여백 추가 */}
+      <div className="h-6"></div>
     </div>
   );
 }

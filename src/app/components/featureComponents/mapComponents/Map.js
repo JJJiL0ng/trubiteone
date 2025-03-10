@@ -11,6 +11,8 @@ import PlaceSearch from '@app/components/featureComponents/mapComponents/PlaceSe
 import Script from 'next/script';
 import useMapStore from '@app/store/mapStore';
 import { searchPlaceByQuery } from '@app/lib/maps';
+// 바텀시트 관련 컴포넌트 임포트
+import ReviewBottomSheet from '@app/components/featureComponents/reviewComponents/ReviewBottomSheet';
 
 /**
  * 구글 맵 컴포넌트
@@ -34,6 +36,10 @@ const Map = ({
   const [mapsLoaded, setMapsLoaded] = useState(false);
   const [mapRenderAttempt, setMapRenderAttempt] = useState(0);
   const [forceRender, setForceRender] = useState(0);
+  // 바텀시트 상태 추가
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [selectedPlaceForBottomSheet, setSelectedPlaceForBottomSheet] = useState(null);
+  
   const { isAuthenticated } = useAuth();
   const mapContainerRef = useRef(null);
   const resetMapState = useMapStore(state => state.resetMapState);
@@ -71,7 +77,7 @@ const Map = ({
     useMarkerClustering: enableClustering,
     loadSavedPosition: true,
     mapOptions: {
-      mapTypeId: 'roadmap',
+      mapTypeId: 'roadmap', 
       mapTypeControl: false,
       fullscreenControl: false,
       streetViewControl: false,
@@ -151,10 +157,17 @@ const Map = ({
     }
   }, [map, mapInitialized, loadPlaces, forceRender]);
 
-  // 선택된 장소가 변경되면 콜백 호출
+  // 선택된 장소가 변경되면 콜백 호출 및 바텀시트 표시
   useEffect(() => {
-    if (selectedPlace && onPlaceSelect) {
-      onPlaceSelect(selectedPlace);
+    if (selectedPlace) {
+      // 기존 콜백 호출
+      if (onPlaceSelect) {
+        onPlaceSelect(selectedPlace);
+      }
+      
+      // 바텀시트용 상태 설정
+      setSelectedPlaceForBottomSheet(selectedPlace);
+      setBottomSheetVisible(true);
     }
   }, [selectedPlace, onPlaceSelect]);
 
@@ -172,8 +185,26 @@ const Map = ({
         onPlaceSelect(place);
       }
       
+      // 바텀시트 표시
+      setSelectedPlaceForBottomSheet(place);
+      setBottomSheetVisible(true);
+      
       // 검색창 닫기
       setSearchVisible(false);
+    }
+  };
+
+  // 바텀시트 닫기 핸들러
+  const handleCloseBottomSheet = () => {
+    setBottomSheetVisible(false);
+  };
+
+  // 원픽 등록 핸들러
+  const handleAddFavorite = () => {
+    if (selectedPlaceForBottomSheet) {
+      window.location.href = `/addMyFavorite?placeId=${selectedPlaceForBottomSheet.id}`;
+    } else {
+      window.location.href = '/addMyFavorite';
     }
   };
 
@@ -322,13 +353,7 @@ const Map = ({
           {/* 원픽 맛집 추가 버튼 (로그인 시에만 표시) */}
           {isAuthenticated && (
             <button
-              onClick={() => {
-                if (selectedPlace) {
-                  window.location.href = `/addMyFavorite?placeId=${selectedPlace.id}`;
-                } else {
-                  window.location.href = '/addMyFavorite';
-                }
-              }}
+              onClick={handleAddFavorite}
               className="bg-white p-3 rounded-full shadow-md hover:bg-gray-100 transition-colors"
               aria-label="원픽 맛집 추가"
               title="원픽 맛집 추가"
@@ -368,42 +393,14 @@ const Map = ({
         </div>
       )}
 
-      {/* 선택된 장소 정보 */}
-      {selectedPlace && map && (
-        <div className="absolute bottom-4 left-4 right-4 bg-white rounded-lg shadow-lg p-4 z-10">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-bold text-lg">{selectedPlace.name}</h3>
-              <p className="text-sm text-gray-600">{selectedPlace.address}</p>
-              
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => window.location.href = `/reviews/${selectedPlace.id}`}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  리뷰 보기
-                </button>
-                
-                {isAuthenticated && (
-                  <button
-                    onClick={() => window.location.href = `/addMyFavorite?placeId=${selectedPlace.id}`}
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-                  >
-                    원픽 등록
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            <button
-              onClick={() => moveToPlace(null)}
-              className="text-gray-500 hover:text-gray-700"
-              aria-label="닫기"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
+      {/* 바텀시트 */}
+      {bottomSheetVisible && selectedPlaceForBottomSheet && (
+        <ReviewBottomSheet
+          isOpen={bottomSheetVisible}
+          onClose={handleCloseBottomSheet}
+          place={selectedPlaceForBottomSheet}
+          onAddFavorite={handleAddFavorite}
+        />
       )}
     </div>
   );
